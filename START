@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vulnerability Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0d1117; color: #e6edf3; font-family: 'Segoe UI', sans-serif; padding: 24px; }
+  h1 { font-size: 20px; font-weight: 600; margin-bottom: 6px; color: #58a6ff; }
+  .subtitle { font-size: 13px; color: #8b949e; margin-bottom: 24px; }
+  code { background: #161b22; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+
+  .cards { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
+  .card { flex: 1; min-width: 140px; background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 18px 20px; }
+  .card .label { font-size: 12px; color: #8b949e; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
+  .card .value { font-size: 32px; font-weight: 700; }
+  .card.critical .value { color: #f85149; }
+  .card.high .value { color: #e3b341; }
+  .card.medium .value { color: #d29922; }
+  .card.low .value { color: #3fb950; }
+  .card.total .value { color: #58a6ff; }
+  .card.breached .value { color: #f85149; }
+
+  /* Chart row */
+  .chart-row { display: grid; grid-template-columns: 1fr 340px; gap: 16px; margin-bottom: 28px; }
+  @media(max-width:800px){ .chart-row { grid-template-columns: 1fr; } }
+  .chart-wrap { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 20px; }
+  .chart-wrap h2 { font-size: 14px; font-weight: 600; margin-bottom: 14px; color: #e6edf3; }
+  .chart-inner { position: relative; height: 220px; }
+  .donut-inner { position: relative; height: 220px; display: flex; align-items: center; justify-content: center; }
+  .donut-center { position: absolute; text-align: center; pointer-events: none; }
+  .donut-center .big { font-size: 28px; font-weight: 700; color: #e6edf3; }
+  .donut-center .small { font-size: 11px; color: #8b949e; margin-top: 2px; }
+
+  /* Region tabs */
+  .tab-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .tab { padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid #30363d; background: #161b22; color: #8b949e; transition: all .15s; }
+  .tab:hover { border-color: #58a6ff; color: #58a6ff; }
+  .tab.active { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+
+  /* Table */
+  .table-wrap { background: #161b22; border: 1px solid #30363d; border-radius: 10px; overflow: hidden; }
+  .table-header { padding: 14px 20px; border-bottom: 1px solid #30363d; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  .table-header span { font-size: 14px; font-weight: 600; }
+  .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  input#search { background: #0d1117; border: 1px solid #30363d; color: #e6edf3; padding: 6px 12px; border-radius: 6px; font-size: 13px; width: 200px; }
+  input#search:focus { outline: none; border-color: #58a6ff; }
+  button { background: #21262d; border: 1px solid #30363d; color: #e6edf3; padding: 6px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; transition: background .15s; }
+  button:hover { background: #30363d; }
+  button.primary { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+  button.primary:hover { background: #388bfd; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 10px 16px; color: #8b949e; font-weight: 500; border-bottom: 1px solid #21262d; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+  th.sortable { cursor: pointer; user-select: none; }
+  th.sortable:hover { color: #e6edf3; }
+  td { padding: 7px 12px; border-bottom: 1px solid #21262d; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #1c2128; }
+  tr.editing td { background: #1c2128; }
+
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+  .badge.Critical { background: rgba(248,81,73,.15); color: #f85149; border: 1px solid rgba(248,81,73,.3); }
+  .badge.High     { background: rgba(227,179,65,.15); color: #e3b341; border: 1px solid rgba(227,179,65,.3); }
+  .badge.Medium   { background: rgba(210,153,34,.15); color: #d29922; border: 1px solid rgba(210,153,34,.3); }
+  .badge.Low      { background: rgba(63,185,80,.15);  color: #3fb950; border: 1px solid rgba(63,185,80,.3); }
+  .badge.Info     { background: rgba(88,166,255,.15); color: #58a6ff; border: 1px solid rgba(88,166,255,.3); }
+
+  .sla-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .sla-badge.ok      { background: rgba(63,185,80,.15);  color: #3fb950; border: 1px solid rgba(63,185,80,.3); }
+  .sla-badge.warning { background: rgba(210,153,34,.15); color: #d29922; border: 1px solid rgba(210,153,34,.3); }
+  .sla-badge.breach  { background: rgba(248,81,73,.15);  color: #f85149; border: 1px solid rgba(248,81,73,.3); }
+
+  .age { font-size: 12px; color: #8b949e; }
+  .age.old { color: #f85149; }
+
+  td input, td select { background: #0d1117; border: 1px solid #388bfd; color: #e6edf3; padding: 4px 8px; border-radius: 5px; font-size: 12px; width: 100%; }
+
+  #addRowForm { display: none; padding: 16px 20px; border-top: 1px solid #30363d; background: #1c2128; }
+  #addRowForm h3 { font-size: 13px; font-weight: 600; margin-bottom: 12px; color: #58a6ff; }
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 12px; }
+  .form-grid label { font-size: 11px; color: #8b949e; display: block; margin-bottom: 4px; }
+  .form-grid input, .form-grid select { background: #0d1117; border: 1px solid #30363d; color: #e6edf3; padding: 6px 10px; border-radius: 6px; font-size: 13px; width: 100%; }
+  .form-actions { display: flex; gap: 8px; }
+
+  /* SLA thresholds by severity (days) */
+  /* Critical=7, High=30, Medium=60, Low=90 */
+
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 100; align-items: center; justify-content: center; }
+  .modal-bg.open { display: flex; }
+  .modal { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 24px; width: 370px; }
+  .modal h3 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+  .modal label { font-size: 12px; color: #8b949e; display: block; margin-bottom: 4px; margin-top: 10px; }
+  .modal input { background: #0d1117; border: 1px solid #30363d; color: #e6edf3; padding: 7px 10px; border-radius: 6px; font-size: 13px; width: 100%; }
+  .modal-actions { display: flex; gap: 8px; margin-top: 18px; }
+</style>
+</head>
+<body>
+
+<h1>Vulnerability Dashboard</h1>
+<p class="subtitle">Last updated: <span id="lastUpdated"></span> &nbsp;|&nbsp; Click row to edit &nbsp;·&nbsp; Double-click to delete</p>
+
+<!-- Cards -->
+<div class="cards" id="cards"></div>
+
+<!-- Charts row -->
+<div class="chart-row">
+  <div class="chart-wrap">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <h2>Week-over-Week Trend</h2>
+      <button onclick="openTrendModal()">+ Add Week</button>
+    </div>
+    <div class="chart-inner" style="margin-top:14px">
+      <canvas id="trendChart"></canvas>
+    </div>
+  </div>
+  <div class="chart-wrap">
+    <h2>Severity Breakdown</h2>
+    <div class="donut-inner">
+      <canvas id="donutChart"></canvas>
+      <div class="donut-center">
+        <div class="big" id="donutTotal">0</div>
+        <div class="small">Total Open</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Region tabs -->
+<div class="tab-row" id="tabRow"></div>
+
+<!-- Table -->
+<div class="table-wrap">
+  <div class="table-header">
+    <span>Findings</span>
+    <div class="toolbar">
+      <input id="search" type="text" placeholder="Search asset, plugin, CVE…">
+      <button onclick="toggleAddRow()">+ Add Row</button>
+      <button class="primary" onclick="exportCSV()">⬇ Export CSV</button>
+    </div>
+  </div>
+
+  <div id="addRowForm">
+    <h3>New Finding</h3>
+    <div class="form-grid">
+      <div><label>Asset</label><input id="f_asset" placeholder="LAPTOP-US-001"></div>
+      <div><label>Region</label>
+        <select id="f_region"><option>US</option><option>UK</option><option>AU</option><option>DE</option><option>Other</option></select>
+      </div>
+      <div><label>Severity</label>
+        <select id="f_severity"><option>Critical</option><option>High</option><option>Medium</option><option>Low</option><option>Info</option></select>
+      </div>
+      <div><label>Plugin / Vulnerability</label><input id="f_plugin" placeholder="Log4Shell RCE"></div>
+      <div><label>CVE</label><input id="f_cve" placeholder="CVE-2021-44228"></div>
+      <div><label>Age (days)</label><input id="f_age" type="number" placeholder="0"></div>
+      <div><label>State</label>
+        <select id="f_state"><option>Open</option><option>Remediated</option><option>Exception</option><option>In Progress</option></select>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="primary" onclick="addRow()">Add Finding</button>
+      <button onclick="toggleAddRow()">Cancel</button>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th class="sortable" data-col="asset">Asset</th>
+        <th class="sortable" data-col="region">Region</th>
+        <th class="sortable" data-col="severity">Severity</th>
+        <th class="sortable" data-col="plugin">Plugin / Vulnerability</th>
+        <th class="sortable" data-col="cve">CVE</th>
+        <th class="sortable" data-col="age">Age</th>
+        <th class="sortable" data-col="state">State</th>
+        <th>SLA</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<!-- Trend Modal -->
+<div class="modal-bg" id="trendModal">
+  <div class="modal">
+    <h3>Add Weekly Snapshot</h3>
+    <label>Week Label (e.g. Jun 11)</label><input id="tw_label" placeholder="Jun 11">
+    <label>Critical</label><input id="tw_crit" type="number" value="0">
+    <label>High</label><input id="tw_high" type="number" value="0">
+    <label>Medium</label><input id="tw_med" type="number" value="0">
+    <label>Low</label><input id="tw_low" type="number" value="0">
+    <div class="modal-actions">
+      <button class="primary" onclick="addTrendWeek()">Add</button>
+      <button onclick="closeTrendModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  VULN DATA
+// ============================================================
+let VULN_DATA = [
+  { asset:"LAPTOP-US-001",    region:"US", severity:"Critical", plugin:"Log4Shell RCE",                    cve:"CVE-2021-44228", age:92,  state:"Open" },
+  { asset:"LAPTOP-UK-042",    region:"UK", severity:"Critical", plugin:"ProxyLogon Exchange RCE",           cve:"CVE-2021-26855", age:74,  state:"Open" },
+  { asset:"SERVER-PROD-03",   region:"US", severity:"High",     plugin:"Apache HTTP Server Path Traversal", cve:"CVE-2021-41773", age:45,  state:"Open" },
+  { asset:"LAPTOP-AU-007",    region:"AU", severity:"High",     plugin:"Mozilla Firefox < 148.0",           cve:"CVE-2026-1100",  age:12,  state:"Open" },
+  { asset:"WORKSTATION-DE-9", region:"DE", severity:"High",     plugin:"Dell Peripheral Manager < 1.7.6",   cve:"N/A",            age:8,   state:"Remediated" },
+  { asset:"SERVER-PROD-01",   region:"US", severity:"Medium",   plugin:"nginx SSL Upstream Injection",      cve:"CVE-2026-1642",  age:21,  state:"Open" },
+  { asset:"LAPTOP-US-033",    region:"US", severity:"Medium",   plugin:"Office Protected View Disabled",    cve:"N/A",            age:5,   state:"Open" },
+  { asset:"LAPTOP-US-019",    region:"US", severity:"Medium",   plugin:"Cisco Webex DLL Injection",         cve:"CVE-2025-9832",  age:17,  state:"Open" },
+  { asset:"LAPTOP-UK-011",    region:"UK", severity:"Low",      plugin:"TLS 1.0 Enabled",                   cve:"N/A",            age:60,  state:"Exception" },
+  { asset:"LAPTOP-AU-003",    region:"AU", severity:"Low",      plugin:"SMB Signing Disabled",              cve:"N/A",            age:30,  state:"Open" },
+  { asset:"SERVER-DEV-02",    region:"UK", severity:"Info",     plugin:"Open Port Detection (8080)",        cve:"N/A",            age:3,   state:"Open" },
+];
+
+let TREND_DATA = [
+  { week:"May 7",  Critical:5, High:9, Medium:12, Low:6 },
+  { week:"May 14", Critical:5, High:8, Medium:11, Low:5 },
+  { week:"May 21", Critical:4, High:8, Medium:10, Low:5 },
+  { week:"May 28", Critical:3, High:7, Medium:9,  Low:4 },
+  { week:"Jun 4",  Critical:2, High:5, Medium:7,  Low:2 },
+];
+
+// SLA thresholds in days
+const SLA = { Critical:7, High:30, Medium:60, Low:90, Info:999 };
+
+const SEV_ORDER = { Critical:0, High:1, Medium:2, Low:3, Info:4 };
+let sortCol = "severity", sortDir = 1;
+let editingIdx = null;
+let activeRegion = "All";
+let trendChart = null, donutChart = null;
+
+// ---- SLA status ----
+function slaStatus(v) {
+  if (v.state === "Remediated" || v.state === "Exception") return "ok";
+  const limit = SLA[v.severity] || 999;
+  if (v.age >= limit) return "breach";
+  if (v.age >= limit * 0.8) return "warning";
+  return "ok";
+}
+function slaLabel(v) {
+  if (v.state === "Remediated") return "✓ Done";
+  if (v.state === "Exception")  return "Exempt";
+  const limit = SLA[v.severity] || 999;
+  const left = limit - v.age;
+  const st = slaStatus(v);
+  if (st === "breach")  return `Breached ${Math.abs(left)}d ago`;
+  if (st === "warning") return `${left}d left`;
+  return `${left}d left`;
+}
+
+// ---- Cards ----
+function updateCards() {
+  const src = activeRegion === "All" ? VULN_DATA : VULN_DATA.filter(v => v.region === activeRegion);
+  const c = { Critical:0, High:0, Medium:0, Low:0 };
+  let breaches = 0;
+  src.forEach(v => {
+    if (c[v.severity] !== undefined) c[v.severity]++;
+    if (slaStatus(v) === "breach") breaches++;
+  });
+  const total = Object.values(c).reduce((a,b)=>a+b,0);
+  document.getElementById("cards").innerHTML = `
+    <div class="card total"><div class="label">Total</div><div class="value">${total}</div></div>
+    <div class="card critical"><div class="label">Critical</div><div class="value">${c.Critical}</div></div>
+    <div class="card high"><div class="label">High</div><div class="value">${c.High}</div></div>
+    <div class="card medium"><div class="label">Medium</div><div class="value">${c.Medium}</div></div>
+    <div class="card low"><div class="label">Low</div><div class="value">${c.Low}</div></div>
+    <div class="card breached"><div class="label">SLA Breached</div><div class="value">${breaches}</div></div>
+  `;
+}
+
+// ---- Donut ----
+function renderDonut() {
+  const src = activeRegion === "All" ? VULN_DATA : VULN_DATA.filter(v => v.region === activeRegion);
+  const open = src.filter(v => v.state === "Open" || v.state === "In Progress");
+  const c = { Critical:0, High:0, Medium:0, Low:0, Info:0 };
+  open.forEach(v => { if(c[v.severity]!==undefined) c[v.severity]++; });
+  const total = Object.values(c).reduce((a,b)=>a+b,0);
+  document.getElementById("donutTotal").textContent = total;
+
+  if (donutChart) donutChart.destroy();
+  donutChart = new Chart(document.getElementById("donutChart"), {
+    type: "doughnut",
+    data: {
+      labels: ["Critical","High","Medium","Low","Info"],
+      datasets: [{
+        data: [c.Critical, c.High, c.Medium, c.Low, c.Info],
+        backgroundColor: ["#f85149","#e3b341","#d29922","#3fb950","#58a6ff"],
+        borderColor: "#161b22",
+        borderWidth: 3,
+        hoverOffset: 6,
+      }]
+    },
+    options: {
+      cutout: "72%",
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position:"bottom", labels:{ color:"#8b949e", font:{size:11}, padding:12, boxWidth:12 } }
+      }
+    }
+  });
+}
+
+// ---- Trend Chart ----
+function renderTrend() {
+  if (trendChart) trendChart.destroy();
+  trendChart = new Chart(document.getElementById("trendChart"), {
+    type: "line",
+    data: {
+      labels: TREND_DATA.map(d=>d.week),
+      datasets: [
+        { label:"Critical", data:TREND_DATA.map(d=>d.Critical), borderColor:"#f85149", backgroundColor:"rgba(248,81,73,.1)",  tension:.3, fill:true, pointRadius:4 },
+        { label:"High",     data:TREND_DATA.map(d=>d.High),     borderColor:"#e3b341", backgroundColor:"rgba(227,179,65,.1)", tension:.3, fill:true, pointRadius:4 },
+        { label:"Medium",   data:TREND_DATA.map(d=>d.Medium),   borderColor:"#d29922", backgroundColor:"rgba(210,153,34,.08)",tension:.3, fill:true, pointRadius:4 },
+        { label:"Low",      data:TREND_DATA.map(d=>d.Low),      borderColor:"#3fb950", backgroundColor:"rgba(63,185,80,.08)", tension:.3, fill:true, pointRadius:4 },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ color:"#8b949e", font:{size:12} } } },
+      scales:{
+        x:{ ticks:{color:"#8b949e"}, grid:{color:"#21262d"} },
+        y:{ ticks:{color:"#8b949e"}, grid:{color:"#21262d"}, beginAtZero:true }
+      }
+    }
+  });
+}
+
+function openTrendModal()  { document.getElementById("trendModal").classList.add("open"); }
+function closeTrendModal() { document.getElementById("trendModal").classList.remove("open"); }
+function addTrendWeek() {
+  const label = document.getElementById("tw_label").value.trim();
+  if (!label) return;
+  TREND_DATA.push({
+    week: label,
+    Critical: +document.getElementById("tw_crit").value||0,
+    High:     +document.getElementById("tw_high").value||0,
+    Medium:   +document.getElementById("tw_med").value||0,
+    Low:      +document.getElementById("tw_low").value||0,
+  });
+  closeTrendModal();
+  renderTrend();
+}
+
+// ---- Region Tabs ----
+function buildTabs() {
+  const regions = ["All", ...new Set(VULN_DATA.map(v=>v.region).sort())];
+  document.getElementById("tabRow").innerHTML = regions.map(r =>
+    `<div class="tab ${r===activeRegion?'active':''}" onclick="setRegion('${r}')">${r}</div>`
+  ).join("");
+}
+function setRegion(r) {
+  activeRegion = r;
+  buildTabs();
+  updateCards();
+  renderDonut();
+  renderTable();
+}
+
+// ---- Table ----
+function getFiltered() {
+  const q = document.getElementById("search").value.toLowerCase();
+  return VULN_DATA
+    .map((v,i) => ({...v, _idx:i}))
+    .filter(v => activeRegion==="All" || v.region===activeRegion)
+    .filter(v => [v.asset,v.plugin,v.cve,v.severity,v.state,v.region].some(s=>s.toLowerCase().includes(q)))
+    .sort((a,b)=>{
+      if (sortCol==="severity") return (SEV_ORDER[a.severity]-SEV_ORDER[b.severity])*sortDir;
+      if (sortCol==="age")      return (a.age-b.age)*sortDir;
+      return String(a[sortCol]).localeCompare(String(b[sortCol]))*sortDir;
+    });
+}
+
+function renderTable() {
+  const rows = getFiltered();
+  document.getElementById("tbody").innerHTML = rows.map(v => {
+    const idx = v._idx;
+    if (editingIdx === idx) return editRowHTML(v, idx);
+    const sl = slaStatus(v), slLabel = slaLabel(v);
+    return `
+      <tr onclick="startEdit(${idx})" ondblclick="deleteRow(event,${idx})" title="Click to edit · Double-click to delete">
+        <td>${v.asset}</td>
+        <td style="font-size:12px;color:#8b949e">${v.region}</td>
+        <td><span class="badge ${v.severity}">${v.severity}</span></td>
+        <td>${v.plugin}</td>
+        <td style="font-size:12px;color:#8b949e">${v.cve}</td>
+        <td><span class="age ${v.age>30?'old':''}">${v.age}d</span></td>
+        <td style="font-size:12px">${v.state}</td>
+        <td><span class="sla-badge ${sl}">${slLabel}</span></td>
+      </tr>`;
+  }).join("");
+}
+
+function editRowHTML(v, idx) {
+  const sevOpts = ["Critical","High","Medium","Low","Info"].map(s=>`<option ${s===v.severity?"selected":""}>${s}</option>`).join("");
+  const stOpts  = ["Open","Remediated","Exception","In Progress"].map(s=>`<option ${s===v.state?"selected":""}>${s}</option>`).join("");
+  const regOpts = ["US","UK","AU","DE","Other"].map(s=>`<option ${s===v.region?"selected":""}>${s}</option>`).join("");
+  return `
+    <tr class="editing">
+      <td><input id="e_asset"  value="${v.asset}"></td>
+      <td><select id="e_reg">${regOpts}</select></td>
+      <td><select id="e_sev">${sevOpts}</select></td>
+      <td><input id="e_plugin" value="${v.plugin}"></td>
+      <td><input id="e_cve"   value="${v.cve}" style="width:120px"></td>
+      <td><input id="e_age"   value="${v.age}" type="number" style="width:65px"></td>
+      <td><select id="e_state">${stOpts}</select></td>
+      <td>—</td>
+    </tr>
+    <tr style="background:#1c2128">
+      <td colspan="8" style="padding:8px 12px">
+        <button class="primary" onclick="saveEdit(${idx})">✓ Save</button>
+        <button onclick="cancelEdit()" style="margin-left:8px">Cancel</button>
+      </td>
+    </tr>`;
+}
+
+function startEdit(idx) { editingIdx = idx; renderTable(); }
+function cancelEdit()   { editingIdx = null; renderTable(); }
+function saveEdit(idx) {
+  VULN_DATA[idx] = {
+    asset:    document.getElementById("e_asset").value.trim(),
+    region:   document.getElementById("e_reg").value,
+    severity: document.getElementById("e_sev").value,
+    plugin:   document.getElementById("e_plugin").value.trim(),
+    cve:      document.getElementById("e_cve").value.trim(),
+    age:      parseInt(document.getElementById("e_age").value)||0,
+    state:    document.getElementById("e_state").value,
+  };
+  editingIdx = null;
+  refreshAll();
+}
+function deleteRow(e, idx) {
+  e.stopPropagation();
+  if (confirm(`Delete "${VULN_DATA[idx].asset} – ${VULN_DATA[idx].plugin}"?`)) {
+    VULN_DATA.splice(idx,1);
+    editingIdx = null;
+    refreshAll();
+  }
+}
+
+// ---- Add Row ----
+function toggleAddRow() {
+  const f = document.getElementById("addRowForm");
+  f.style.display = f.style.display==="block" ? "none" : "block";
+}
+function addRow() {
+  const asset = document.getElementById("f_asset").value.trim();
+  if (!asset) return alert("Asset name is required.");
+  VULN_DATA.unshift({
+    asset,
+    region:   document.getElementById("f_region").value,
+    severity: document.getElementById("f_severity").value,
+    plugin:   document.getElementById("f_plugin").value.trim()||"Unknown",
+    cve:      document.getElementById("f_cve").value.trim()||"N/A",
+    age:      parseInt(document.getElementById("f_age").value)||0,
+    state:    document.getElementById("f_state").value,
+  });
+  document.getElementById("addRowForm").style.display="none";
+  ["f_asset","f_plugin","f_cve","f_age"].forEach(id=>document.getElementById(id).value="");
+  refreshAll();
+}
+
+// ---- Export CSV ----
+function exportCSV() {
+  const src = activeRegion==="All" ? VULN_DATA : VULN_DATA.filter(v=>v.region===activeRegion);
+  const headers = ["Asset","Region","Severity","Plugin / Vulnerability","CVE","Age (days)","State","SLA Status"];
+  const rows = src.map(v=>[v.asset, v.region, v.severity, `"${v.plugin}"`, v.cve, v.age, v.state, slaLabel(v)]);
+  const csv = [headers.join(","), ...rows.map(r=>r.join(","))].join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download = `vuln-${activeRegion}-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// ---- Sort ----
+document.querySelectorAll("th.sortable").forEach(th=>{
+  th.addEventListener("click",()=>{
+    const col = th.dataset.col;
+    sortDir = col===sortCol ? sortDir*-1 : 1;
+    sortCol = col;
+    renderTable();
+  });
+});
+
+document.getElementById("search").addEventListener("input", renderTable);
+
+// ---- Refresh all ----
+function refreshAll() {
+  buildTabs();
+  updateCards();
+  renderDonut();
+  renderTable();
+}
+
+// ---- Init ----
+document.getElementById("lastUpdated").textContent =
+  new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+
+refreshAll();
+renderTrend();
+</script>
+</body>
+</html>
