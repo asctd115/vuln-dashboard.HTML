@@ -5,270 +5,341 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vulnerability Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: #0d1117; color: #e6edf3; font-family: 'Segoe UI', sans-serif; padding: 24px; font-size: 13px; }
-h1 { font-size: 22px; font-weight: 700; color: #58a6ff; margin-bottom: 4px; }
-.subtitle { font-size: 13px; color: #8b949e; margin-bottom: 20px; }
+body { background: #0d1117; color: #e6edf3; font-family: 'Segoe UI', sans-serif; display: flex; min-height: 100vh; }
 
-/* NAV TABS */
-.nav { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid #30363d; padding-bottom: 0; flex-wrap: wrap; }
-.nav-tab { padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; background: none; color: #8b949e; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .15s; }
-.nav-tab:hover { color: #e6edf3; }
-.nav-tab.active { color: #58a6ff; border-bottom-color: #58a6ff; }
+/* ── SIDEBAR ── */
+#sidebar {
+  width: 220px; min-width: 220px; background: #010409;
+  border-right: 1px solid #21262d; display: flex; flex-direction: column;
+  position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; overflow-y: auto;
+}
+.sb-logo { padding: 20px 16px 14px; border-bottom: 1px solid #21262d; }
+.sb-logo h1 { font-size: 15px; font-weight: 700; color: #58a6ff; }
+.sb-logo p  { font-size: 10px; color: #8b949e; margin-top: 3px; }
+.sb-section { padding: 10px 10px 4px; font-size: 10px; font-weight: 600; color: #484f58; text-transform: uppercase; letter-spacing: .08em; }
+.sb-item {
+  display: flex; align-items: center; gap: 10px; padding: 9px 14px;
+  cursor: pointer; border-radius: 6px; margin: 1px 8px; font-size: 13px;
+  color: #8b949e; transition: all .15s; border: none; background: none; width: calc(100% - 16px); text-align: left;
+}
+.sb-item:hover { background: #161b22; color: #e6edf3; }
+.sb-item.active { background: #1f2937; color: #58a6ff; }
+.sb-item .sb-icon { font-size: 15px; flex-shrink: 0; }
+.sb-item .sb-badge { margin-left: auto; background: #f85149; color: #fff; border-radius: 10px; font-size: 10px; font-weight: 700; padding: 1px 6px; }
+.sb-divider { border: none; border-top: 1px solid #21262d; margin: 8px 14px; }
+.sb-footer { padding: 14px; margin-top: auto; border-top: 1px solid #21262d; font-size: 11px; color: #484f58; }
+.sb-footer span { display: block; margin-bottom: 2px; }
 
-/* PAGE SECTIONS */
-.page { display: none; }
-.page.active { display: block; }
+/* ── MAIN ── */
+#main { margin-left: 220px; flex: 1; padding: 24px; min-width: 0; }
 
-/* IMPORT BAR */
-.import-bar { background: #161b22; border: 2px dashed #30363d; border-radius: 12px; padding: 18px 22px; margin-bottom: 22px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; transition: border-color .2s; }
+/* ── TOP BAR ── */
+.topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+.topbar h2 { font-size: 18px; font-weight: 700; color: #e6edf3; }
+.topbar-right { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ── IMPORT BAR ── */
+.import-bar { background: #161b22; border: 2px dashed #30363d; border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .import-bar:hover { border-color: #58a6ff; }
 .import-bar input[type=file] { display: none; }
-.import-bar label.btn-import { background: #1f6feb; color: #fff; padding: 7px 16px; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; }
-.import-bar label.btn-import:hover { background: #388bfd; }
 .import-bar .itext h3 { font-size: 13px; font-weight: 600; }
-.import-bar .itext p { font-size: 11px; color: #8b949e; margin-top: 2px; }
-#importStatus { font-size: 12px; color: #3fb950; font-weight: 600; margin-left: auto; }
+.import-bar .itext p  { font-size: 11px; color: #8b949e; margin-top: 2px; }
+label.btn-imp { background:#1f6feb; color:#fff; padding:6px 14px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; flex-shrink:0; }
+label.btn-imp:hover { background:#388bfd; }
+#importStatus { font-size:12px; color:#3fb950; font-weight:600; margin-left:auto; }
 
-/* CARDS */
-.cards { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; }
-.card { flex: 1; min-width: 120px; background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 14px 16px; }
-.card .lbl { font-size: 10px; color: #8b949e; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
-.card .val { font-size: 28px; font-weight: 700; }
-.card .sub { font-size: 10px; color: #8b949e; margin-top: 3px; }
-.c-total .val   { color: #58a6ff; }
-.c-crit .val    { color: #f85149; }
-.c-high .val    { color: #e3b341; }
-.c-med .val     { color: #d29922; }
-.c-low .val     { color: #3fb950; }
-.c-breach .val  { color: #f85149; }
-.c-epss .val    { color: #c084fc; font-size: 20px !important; }
-.c-exploit .val { color: #f85149; }
-.c-kev .val     { color: #ff7b72; }
+/* ── EXPORT ROW ── */
+.export-row { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
 
-/* CHARTS GRID */
-.chart-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 22px; }
-.chart-grid-3 { display: grid; grid-template-columns: 1fr 1fr 300px; gap: 16px; margin-bottom: 22px; }
-.chart-grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; margin-bottom: 22px; }
-@media(max-width:900px){ .chart-grid-2,.chart-grid-3,.chart-grid-4{ grid-template-columns:1fr; } }
-.cw { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 18px; }
-.cw h2 { font-size: 11px; font-weight: 600; color: #8b949e; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
-.cw-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.cw-h h2 { margin-bottom: 0; }
-.ci { position: relative; height: 200px; }
-.ci-tall { position: relative; height: 260px; }
-.donut-wrap { position: relative; height: 200px; display: flex; align-items: center; justify-content: center; }
-.donut-center { position: absolute; text-align: center; pointer-events: none; }
-.donut-center .big { font-size: 24px; font-weight: 800; color: #e6edf3; }
-.donut-center .sm  { font-size: 10px; color: #8b949e; }
+/* ── CARDS ── */
+.cards { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+.card { flex:1; min-width:110px; background:#161b22; border:1px solid #30363d; border-radius:10px; padding:14px 16px; }
+.card .lbl { font-size:10px; color:#8b949e; text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; }
+.card .val { font-size:26px; font-weight:700; }
+.card .sub { font-size:10px; color:#8b949e; margin-top:3px; }
+.c-total .val{color:#58a6ff} .c-crit .val{color:#f85149} .c-high .val{color:#e3b341}
+.c-med .val{color:#d29922} .c-low .val{color:#3fb950} .c-breach .val{color:#f85149}
+.c-epss .val{color:#c084fc;font-size:18px!important} .c-exploit .val{color:#f85149} .c-kev .val{color:#ff7b72}
 
-/* SLA DISTRIBUTION */
-.sla-bands { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 22px; }
-.sla-band { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 14px; }
-.sla-band .band-label { font-size: 10px; color: #8b949e; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
-.sla-band .band-val { font-size: 26px; font-weight: 700; }
-.sla-band .band-sub { font-size: 10px; color: #8b949e; margin-top: 3px; }
-.sla-band .band-bar { height: 4px; border-radius: 2px; margin-top: 8px; }
-.band-ok      .band-val { color: #3fb950; } .band-ok .band-bar { background: #3fb950; }
-.band-warn    .band-val { color: #d29922; } .band-warn .band-bar { background: #d29922; }
-.band-breach  .band-val { color: #e3b341; } .band-breach .band-bar { background: #e3b341; }
-.band-breach2 .band-val { color: #f85149; } .band-breach2 .band-bar { background: #f85149; }
+/* ── CHARTS ── */
+.chart-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:20px; }
+.chart-grid-3 { display:grid; grid-template-columns:1fr 1fr 280px; gap:14px; margin-bottom:20px; }
+@media(max-width:1000px){ .chart-grid-2,.chart-grid-3{ grid-template-columns:1fr; } }
+.cw { background:#161b22; border:1px solid #30363d; border-radius:10px; padding:16px; }
+.cw h2 { font-size:11px; font-weight:600; color:#8b949e; text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px; }
+.cw-h { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.cw-h h2 { margin-bottom:0; }
+.ci { position:relative; height:190px; }
+.ci-tall { position:relative; height:240px; }
+.donut-wrap { position:relative; height:190px; display:flex; align-items:center; justify-content:center; }
+.donut-center { position:absolute; text-align:center; pointer-events:none; }
+.donut-center .big { font-size:22px; font-weight:800; }
+.donut-center .sm  { font-size:10px; color:#8b949e; }
 
-/* TEAM TABLE */
-.team-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 22px; }
-@media(max-width:900px){ .team-grid { grid-template-columns:1fr 1fr; } }
-.team-card { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 16px; }
-.team-card .team-name { font-size: 13px; font-weight: 700; color: #e6edf3; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
-.team-card .team-icon { font-size: 18px; }
-.team-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid #21262d; font-size: 12px; }
-.team-row:last-child { border-bottom: none; }
-.team-row .tl { color: #8b949e; }
+/* ── SLA BANDS ── */
+.sla-bands { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:20px; }
+@media(max-width:900px){ .sla-bands{ grid-template-columns:1fr 1fr; } }
+.sla-band { background:#161b22; border:1px solid #30363d; border-radius:10px; padding:14px; }
+.sla-band .bl { font-size:10px; color:#8b949e; text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px; }
+.sla-band .bv { font-size:24px; font-weight:700; }
+.sla-band .bs { font-size:10px; color:#8b949e; margin-top:3px; }
+.sla-band .bb { height:3px; border-radius:2px; margin-top:8px; }
+.band-ok    .bv{color:#3fb950} .band-ok .bb{background:#3fb950}
+.band-warn  .bv{color:#d29922} .band-warn .bb{background:#d29922}
+.band-b1    .bv{color:#e3b341} .band-b1 .bb{background:#e3b341}
+.band-b2    .bv{color:#f85149} .band-b2 .bb{background:#f85149}
 
-/* FORECAST */
-.forecast-section { margin-bottom: 22px; }
-.forecast-cards { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 16px; }
-@media(max-width:900px){ .forecast-cards { grid-template-columns:1fr 1fr; } }
-.fc { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 14px 16px; }
-.fc .fc-label { font-size: 10px; color: #8b949e; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
-.fc .fc-val { font-size: 22px; font-weight: 700; }
-.fc .fc-sub { font-size: 11px; color: #8b949e; margin-top: 3px; }
-.fc-crit .fc-val { color: #f85149; }
-.fc-high .fc-val { color: #e3b341; }
-.fc-trend-up   { color: #f85149 !important; }
-.fc-trend-down { color: #3fb950 !important; }
+/* ── TEAM CARDS ── */
+.team-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+@media(max-width:900px){ .team-grid{ grid-template-columns:1fr 1fr; } }
+.team-card { background:#161b22; border:1px solid #30363d; border-radius:10px; padding:14px; }
+.team-name { font-size:13px; font-weight:700; margin-bottom:10px; display:flex; align-items:center; gap:7px; }
+.team-row { display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #21262d; font-size:12px; }
+.team-row:last-child { border-bottom:none; }
+.team-row .tl { color:#8b949e; }
 
-/* EXPLOITABLE */
-.exploit-highlight { background: rgba(248,81,73,.07); border: 1px solid rgba(248,81,73,.2); border-radius: 10px; padding: 16px; margin-bottom: 22px; }
-.exploit-highlight h3 { font-size: 13px; font-weight: 700; color: #f85149; margin-bottom: 12px; }
-.exploit-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.exploit-table th { text-align: left; padding: 7px 10px; color: #8b949e; font-size: 10px; text-transform: uppercase; border-bottom: 1px solid #30363d; }
-.exploit-table td { padding: 7px 10px; border-bottom: 1px solid #21262d; vertical-align: middle; }
-.exploit-table tr:last-child td { border-bottom: none; }
-.exploit-table tr:hover td { background: rgba(248,81,73,.05); cursor: pointer; }
+/* ── FORECAST ── */
+.forecast-cards { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:20px; }
+@media(max-width:900px){ .forecast-cards{ grid-template-columns:1fr 1fr; } }
+.fc { background:#161b22; border:1px solid #30363d; border-radius:10px; padding:14px; }
+.fc .fc-l { font-size:10px; color:#8b949e; text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px; }
+.fc .fc-v { font-size:22px; font-weight:700; }
+.fc .fc-s { font-size:11px; color:#8b949e; margin-top:3px; }
+.fc-crit .fc-v{color:#f85149} .fc-high .fc-v{color:#e3b341}
+.trend-up{color:#f85149!important} .trend-dn{color:#3fb950!important}
 
-/* TABS (region) */
-.tab-row { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
-.tab { padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid #30363d; background: #161b22; color: #8b949e; }
-.tab:hover { border-color: #58a6ff; color: #58a6ff; }
-.tab.active { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+/* ── TABLE ── */
+.table-wrap { background:#161b22; border:1px solid #30363d; border-radius:10px; overflow:hidden; margin-bottom:20px; }
+.table-header { padding:12px 16px; border-bottom:1px solid #30363d; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.th-title { font-size:14px; font-weight:600; }
+.toolbar { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+input.srch { background:#0d1117; border:1px solid #30363d; color:#e6edf3; padding:5px 10px; border-radius:6px; font-size:12px; width:180px; }
+input.srch:focus { outline:none; border-color:#58a6ff; }
+button { background:#21262d; border:1px solid #30363d; color:#e6edf3; padding:5px 12px; border-radius:6px; font-size:12px; cursor:pointer; white-space:nowrap; }
+button:hover { background:#30363d; }
+button.primary { background:#1f6feb; border-color:#1f6feb; color:#fff; }
+button.primary:hover { background:#388bfd; }
+button.success { background:#238636; border-color:#238636; color:#fff; }
+button.success:hover { background:#2ea043; }
+button.purple { background:#6e40c9; border-color:#6e40c9; color:#fff; }
+button.purple:hover { background:#8957e5; }
+button.orange { background:#9e6a03; border-color:#9e6a03; color:#fff; }
+button.orange:hover { background:#bb8009; }
+button.teal { background:#0e7490; border-color:#0e7490; color:#fff; }
+button.teal:hover { background:#0891b2; }
+.table-outer { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:12px; min-width:900px; }
+th { text-align:left; padding:8px 10px; color:#8b949e; font-weight:500; border-bottom:1px solid #21262d; font-size:10px; text-transform:uppercase; letter-spacing:.04em; white-space:nowrap; }
+th.s { cursor:pointer; user-select:none; }
+th.s:hover { color:#e6edf3; }
+td { padding:7px 10px; border-bottom:1px solid #21262d; vertical-align:middle; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:#1c2128; cursor:pointer; }
 
-/* TABLE */
-.table-wrap { background: #161b22; border: 1px solid #30363d; border-radius: 10px; overflow: hidden; }
-.table-header { padding: 12px 18px; border-bottom: 1px solid #30363d; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
-.table-header .th-title { font-size: 14px; font-weight: 600; }
-.toolbar { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
-input#search { background: #0d1117; border: 1px solid #30363d; color: #e6edf3; padding: 6px 11px; border-radius: 6px; font-size: 12px; width: 190px; }
-input#search:focus { outline: none; border-color: #58a6ff; }
-button { background: #21262d; border: 1px solid #30363d; color: #e6edf3; padding: 6px 13px; border-radius: 6px; font-size: 12px; cursor: pointer; }
-button:hover { background: #30363d; }
-button.primary { background: #1f6feb; border-color: #1f6feb; color: #fff; }
-button.primary:hover { background: #388bfd; }
-button.success { background: #238636; border-color: #238636; color: #fff; }
-button.success:hover { background: #2ea043; }
-button.purple { background: #6e40c9; border-color: #6e40c9; color: #fff; }
-button.purple:hover { background: #8957e5; }
-button.orange { background: #9e6a03; border-color: #9e6a03; color: #fff; }
-button.orange:hover { background: #bb8009; }
+/* ── BADGES ── */
+.badge{display:inline-block;padding:2px 7px;border-radius:9px;font-size:10px;font-weight:700;text-transform:uppercase;white-space:nowrap;}
+.badge.Critical{background:rgba(248,81,73,.15);color:#f85149;border:1px solid rgba(248,81,73,.35);}
+.badge.High    {background:rgba(227,179,65,.15);color:#e3b341;border:1px solid rgba(227,179,65,.35);}
+.badge.Medium  {background:rgba(210,153,34,.15);color:#d29922;border:1px solid rgba(210,153,34,.35);}
+.badge.Low     {background:rgba(63,185,80,.15); color:#3fb950;border:1px solid rgba(63,185,80,.35);}
+.badge.Info    {background:rgba(88,166,255,.15);color:#58a6ff;border:1px solid rgba(88,166,255,.35);}
+.sla-ok   {display:inline-block;padding:2px 7px;border-radius:9px;font-size:10px;font-weight:700;background:rgba(63,185,80,.12); color:#3fb950;border:1px solid rgba(63,185,80,.3);}
+.sla-warn {display:inline-block;padding:2px 7px;border-radius:9px;font-size:10px;font-weight:700;background:rgba(210,153,34,.12);color:#d29922;border:1px solid rgba(210,153,34,.3);}
+.sla-brea {display:inline-block;padding:2px 7px;border-radius:9px;font-size:10px;font-weight:700;background:rgba(248,81,73,.12); color:#f85149;border:1px solid rgba(248,81,73,.3);}
+.pill{display:inline-block;padding:1px 5px;border-radius:7px;font-size:10px;font-weight:600;margin-right:2px;}
+.pill.kev    {background:rgba(248,81,73,.25);color:#ff7b72;border:1px solid rgba(248,81,73,.5);}
+.pill.exploit{background:rgba(248,81,73,.15);color:#f85149;border:1px solid rgba(248,81,73,.25);}
+.pill.malware{background:rgba(192,132,252,.15);color:#c084fc;border:1px solid rgba(192,132,252,.25);}
+.pill.news   {background:rgba(88,166,255,.15);color:#58a6ff;border:1px solid rgba(88,166,255,.25);}
+.tp{display:inline-block;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:600;white-space:nowrap;}
+.tp.Endpoint   {background:rgba(88,166,255,.15);color:#58a6ff;border:1px solid rgba(88,166,255,.3);}
+.tp.Server     {background:rgba(63,185,80,.15); color:#3fb950;border:1px solid rgba(63,185,80,.3);}
+.tp.Network    {background:rgba(227,179,65,.15);color:#e3b341;border:1px solid rgba(227,179,65,.3);}
+.tp.Application{background:rgba(192,132,252,.15);color:#c084fc;border:1px solid rgba(192,132,252,.3);}
 
-.table-outer { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 1000px; }
-th { text-align: left; padding: 8px 11px; color: #8b949e; font-weight: 500; border-bottom: 1px solid #21262d; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
-th.sortable { cursor: pointer; user-select: none; }
-th.sortable:hover { color: #e6edf3; }
-td { padding: 7px 11px; border-bottom: 1px solid #21262d; vertical-align: middle; }
-tr:last-child td { border-bottom: none; }
-tr:hover td { background: #1c2128; cursor: pointer; }
+/* ── VPR / EPSS ── */
+.vpr-wrap{display:flex;align-items:center;gap:5px;}
+.vpr-bar {width:44px;height:5px;background:#21262d;border-radius:3px;overflow:hidden;flex-shrink:0;}
+.vpr-fill{height:100%;border-radius:3px;}
+.vpr-num {font-size:11px;font-weight:700;}
+.epss-num{font-size:11px;color:#c084fc;font-weight:600;}
+.cve-link{color:#58a6ff;text-decoration:none;font-size:11px;}
+.cve-link:hover{text-decoration:underline;}
+.age.old{color:#f85149;}
 
-/* BADGES */
-.badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; white-space: nowrap; }
-.badge.Critical { background:rgba(248,81,73,.15);  color:#f85149; border:1px solid rgba(248,81,73,.35); }
-.badge.High     { background:rgba(227,179,65,.15); color:#e3b341; border:1px solid rgba(227,179,65,.35); }
-.badge.Medium   { background:rgba(210,153,34,.15); color:#d29922; border:1px solid rgba(210,153,34,.35); }
-.badge.Low      { background:rgba(63,185,80,.15);  color:#3fb950; border:1px solid rgba(63,185,80,.35); }
-.badge.Info     { background:rgba(88,166,255,.15); color:#58a6ff; border:1px solid rgba(88,166,255,.35); }
-.sla-ok      { display:inline-block;padding:2px 7px;border-radius:9px;font-size:10px;font-weight:700;background:rgba(63,185,80,.12);color:#3fb950;border:1px solid rgba(63,185,80,.3); }
-.sla-warn    { display:inline-block;padding:2px 7px;border-radius:9px;font-size:10px;font-weight:700;background:rgba(210,153,34,.12);color:#d29922;border:1px solid rgba(210,153,34,.3); }
-.sla-breach  { display:inline-block;padding:2px 7px;border-radius:9px;font-size:10px;font-weight:700;background:rgba(248,81,73,.12);color:#f85149;border:1px solid rgba(248,81,73,.3); }
-.pill { display:inline-block;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600;margin-right:2px; }
-.pill.kev      { background:rgba(248,81,73,.25);color:#ff7b72;border:1px solid rgba(248,81,73,.5); }
-.pill.exploit  { background:rgba(248,81,73,.15);color:#f85149;border:1px solid rgba(248,81,73,.25); }
-.pill.malware  { background:rgba(192,132,252,.15);color:#c084fc;border:1px solid rgba(192,132,252,.25); }
-.pill.news     { background:rgba(88,166,255,.15);color:#58a6ff;border:1px solid rgba(88,166,255,.25); }
-.team-pill { display:inline-block;padding:2px 8px;border-radius:9px;font-size:10px;font-weight:600;white-space:nowrap; }
-.team-Endpoint    { background:rgba(88,166,255,.15);color:#58a6ff;border:1px solid rgba(88,166,255,.3); }
-.team-Server      { background:rgba(63,185,80,.15);color:#3fb950;border:1px solid rgba(63,185,80,.3); }
-.team-Network     { background:rgba(227,179,65,.15);color:#e3b341;border:1px solid rgba(227,179,65,.3); }
-.team-Application { background:rgba(192,132,252,.15);color:#c084fc;border:1px solid rgba(192,132,252,.3); }
+/* ── DETAIL PANEL ── */
+.panel-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:400;}
+.panel-bg.open{display:block;}
+.panel{position:fixed;top:0;right:0;width:500px;max-width:95vw;height:100vh;background:#161b22;border-left:1px solid #30363d;overflow-y:auto;padding:26px 22px;z-index:401;}
+.panel h3{font-size:15px;font-weight:700;padding-right:28px;margin-bottom:6px;}
+.close-btn{position:absolute;top:16px;right:16px;background:none;border:none;color:#8b949e;font-size:20px;cursor:pointer;padding:4px;}
+.close-btn:hover{color:#e6edf3;}
+.sec-t{font-size:10px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:.07em;margin:16px 0 7px;border-bottom:1px solid #21262d;padding-bottom:5px;}
+.dg{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.di .dil{font-size:10px;color:#8b949e;margin-bottom:2px;}
+.di .div2{font-size:12px;color:#e6edf3;word-break:break-word;}
+.sol-box{background:#0d1117;border:1px solid #30363d;border-radius:7px;padding:11px;font-size:12px;line-height:1.6;margin-top:5px;}
+.sol-box.green{border-left:3px solid #3fb950;}
+.ref-ul{list-style:none;margin-top:6px;}
+.ref-ul li{margin-bottom:5px;}
+.ref-ul a{color:#58a6ff;font-size:11px;text-decoration:none;word-break:break-all;}
+.ref-ul a:hover{text-decoration:underline;}
+.cve-block{background:rgba(88,166,255,.07);border:1px solid rgba(88,166,255,.2);border-radius:7px;padding:11px;margin-bottom:7px;}
+.cve-block .cve-id{font-size:13px;font-weight:700;color:#58a6ff;margin-bottom:6px;}
+.cve-block .cve-links{display:flex;gap:6px;flex-wrap:wrap;}
+.cve-block .cve-links a{font-size:11px;color:#58a6ff;text-decoration:none;background:rgba(88,166,255,.1);padding:3px 8px;border-radius:5px;border:1px solid rgba(88,166,255,.25);}
+.cve-block .cve-links a:hover{background:rgba(88,166,255,.2);}
 
-/* VPR */
-.vpr-wrap { display:flex;align-items:center;gap:5px; }
-.vpr-bar  { width:50px;height:5px;background:#21262d;border-radius:3px;overflow:hidden;flex-shrink:0; }
-.vpr-fill { height:100%;border-radius:3px; }
-.vpr-num  { font-size:11px;font-weight:700; }
-.epss-num { font-size:11px;color:#c084fc;font-weight:600; }
-.cve-link { color:#58a6ff;text-decoration:none;font-size:11px; }
-.cve-link:hover { text-decoration:underline; }
-.age.old { color:#f85149; }
+/* ── TEAMS NOTIFY ── */
+.teams-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;align-items:center;justify-content:center;}
+.teams-modal-bg.open{display:flex;}
+.teams-modal{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:22px;width:440px;max-width:95vw;}
+.teams-modal h3{font-size:15px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.teams-modal label{font-size:11px;color:#8b949e;display:block;margin-bottom:3px;margin-top:10px;}
+.teams-modal input,.teams-modal textarea,.teams-modal select{background:#0d1117;border:1px solid #30363d;color:#e6edf3;padding:7px 10px;border-radius:6px;font-size:12px;width:100%;}
+.teams-modal textarea{height:90px;resize:vertical;}
+.teams-modal .ma{display:flex;gap:8px;margin-top:14px;}
 
-/* DETAIL PANEL */
-.panel-bg { display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200; }
-.panel-bg.open { display:block; }
-.panel { position:fixed;top:0;right:0;width:500px;max-width:95vw;height:100vh;background:#161b22;border-left:1px solid #30363d;overflow-y:auto;padding:28px 24px;z-index:201; }
-.panel h3 { font-size:16px;font-weight:700;color:#e6edf3;margin-bottom:6px;padding-right:30px; }
-.close-btn { position:absolute;top:18px;right:18px;background:none;border:none;color:#8b949e;font-size:20px;cursor:pointer;padding:4px; }
-.close-btn:hover { color:#e6edf3; }
-.sec-title { font-size:10px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:.07em;margin:18px 0 8px;border-bottom:1px solid #21262d;padding-bottom:5px; }
-.dg { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
-.di .dil { font-size:10px;color:#8b949e;margin-bottom:2px; }
-.di .div2 { font-size:12px;color:#e6edf3;word-break:break-word; }
-.sol-box { background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:12px;font-size:12px;color:#e6edf3;line-height:1.6;margin-top:6px; }
-.sol-box.green { border-left:3px solid #3fb950; }
-.ref-ul { list-style:none;margin-top:6px; }
-.ref-ul li { margin-bottom:5px; }
-.ref-ul a { color:#58a6ff;font-size:11px;text-decoration:none;word-break:break-all; }
-.ref-ul a:hover { text-decoration:underline; }
-.cve-block { background:rgba(88,166,255,.07);border:1px solid rgba(88,166,255,.2);border-radius:8px;padding:12px;margin-bottom:8px; }
-.cve-block .cve-id { font-size:14px;font-weight:700;color:#58a6ff;margin-bottom:6px; }
-.cve-block .cve-links { display:flex;gap:8px;flex-wrap:wrap; }
-.cve-block .cve-links a { font-size:11px;color:#58a6ff;text-decoration:none;background:rgba(88,166,255,.1);padding:3px 9px;border-radius:6px;border:1px solid rgba(88,166,255,.25); }
-.cve-block .cve-links a:hover { background:rgba(88,166,255,.2); }
+/* ── LEADERSHIP ── */
+.ldr-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
+@media(max-width:900px){.ldr-kpi-row{grid-template-columns:1fr 1fr;}}
+.ldr-kpi{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:14px 16px;text-align:center;}
+.ldr-kpi .lk-v{font-size:34px;font-weight:800;}
+.ldr-kpi .lk-l{font-size:11px;color:#8b949e;margin-top:4px;}
+.ldr-kpi .lk-d{font-size:11px;color:#8b949e;margin-top:3px;}
+.ldr-risk-bar{display:flex;height:22px;border-radius:6px;overflow:hidden;margin-bottom:6px;}
+.ldr-risk-bar div{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;}
+.ldr-table{width:100%;border-collapse:collapse;font-size:12px;}
+.ldr-table th{text-align:left;padding:7px 10px;color:#8b949e;font-size:10px;text-transform:uppercase;border-bottom:1px solid #30363d;}
+.ldr-table td{padding:7px 10px;border-bottom:1px solid #21262d;}
+.ldr-table tr:last-child td{border-bottom:none;}
+.action-item{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:11px 13px;margin-bottom:7px;display:flex;align-items:flex-start;gap:9px;}
+.ai-num{background:#1f6feb;color:#fff;border-radius:50%;width:21px;height:21px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px;}
+.ai-text{font-size:12px;line-height:1.6;}
+.ai-text strong{color:#e6edf3;}
+.ai-text span{color:#8b949e;}
 
-/* ADD ROW FORM */
-#addRowForm { display:none;padding:14px 18px;border-top:1px solid #30363d;background:#1c2128; }
-.fg { display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:10px; }
-.fg label { font-size:10px;color:#8b949e;display:block;margin-bottom:3px; }
-.fg input,.fg select { background:#0d1117;border:1px solid #30363d;color:#e6edf3;padding:5px 9px;border-radius:6px;font-size:12px;width:100%; }
-.fa { display:flex;gap:8px; }
+/* ── ADD ROW ── */
+#addRowForm{display:none;padding:13px 16px;border-top:1px solid #30363d;background:#1c2128;}
+.fg{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:9px;}
+.fg label{font-size:10px;color:#8b949e;display:block;margin-bottom:3px;}
+.fg input,.fg select{background:#0d1117;border:1px solid #30363d;color:#e6edf3;padding:5px 8px;border-radius:5px;font-size:12px;width:100%;}
+.fa{display:flex;gap:7px;}
 
-/* LEADERSHIP REPORT */
-.ldr-section { margin-bottom: 28px; }
-.ldr-section h2 { font-size: 16px; font-weight: 700; color: #e6edf3; margin-bottom: 14px; border-bottom: 1px solid #30363d; padding-bottom: 8px; }
-.ldr-kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 20px; }
-@media(max-width:800px){ .ldr-kpi-row { grid-template-columns:1fr 1fr; } }
-.ldr-kpi { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 16px 18px; text-align: center; }
-.ldr-kpi .lk-val { font-size: 36px; font-weight: 800; }
-.ldr-kpi .lk-lbl { font-size: 11px; color: #8b949e; margin-top: 4px; }
-.ldr-kpi .lk-delta { font-size: 11px; margin-top: 4px; }
-.ldr-risk-bar { display: flex; height: 24px; border-radius: 6px; overflow: hidden; margin-bottom: 6px; }
-.ldr-risk-bar div { display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; transition: width .4s; }
-.ldr-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.ldr-table th { text-align: left; padding: 8px 12px; color: #8b949e; font-size: 10px; text-transform: uppercase; border-bottom: 1px solid #30363d; }
-.ldr-table td { padding: 8px 12px; border-bottom: 1px solid #21262d; }
-.ldr-table tr:last-child td { border-bottom: none; }
-.action-item { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: flex-start; gap: 10px; }
-.action-item .ai-num { background: #1f6feb; color: #fff; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
-.action-item .ai-text { font-size: 12px; line-height: 1.5; }
-.action-item .ai-text strong { color: #e6edf3; }
-.action-item .ai-text span { color: #8b949e; }
+/* ── PAGE ── */
+.page{display:none;} .page.active{display:block;}
 
-/* MODAL */
-.modal-bg { display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:300;align-items:center;justify-content:center; }
-.modal-bg.open { display:flex; }
-.modal { background:#161b22;border:1px solid #30363d;border-radius:12px;padding:22px;width:360px; }
-.modal h3 { font-size:14px;font-weight:600;margin-bottom:14px; }
-.modal label { font-size:11px;color:#8b949e;display:block;margin-bottom:3px;margin-top:8px; }
-.modal input { background:#0d1117;border:1px solid #30363d;color:#e6edf3;padding:6px 9px;border-radius:6px;font-size:12px;width:100%; }
-.modal-actions { display:flex;gap:8px;margin-top:16px; }
+/* ── MODAL ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:300;align-items:center;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:20px;width:350px;}
+.modal h3{font-size:14px;font-weight:600;margin-bottom:13px;}
+.modal label{font-size:11px;color:#8b949e;display:block;margin-bottom:3px;margin-top:8px;}
+.modal input{background:#0d1117;border:1px solid #30363d;color:#e6edf3;padding:6px 9px;border-radius:6px;font-size:12px;width:100%;}
+.modal-actions{display:flex;gap:7px;margin-top:14px;}
+
+/* ── REGION TABS ── */
+.tab-row{display:flex;gap:7px;margin-bottom:13px;flex-wrap:wrap;}
+.tab{padding:4px 13px;border-radius:18px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid #30363d;background:#161b22;color:#8b949e;}
+.tab:hover{border-color:#58a6ff;color:#58a6ff;}
+.tab.active{background:#1f6feb;border-color:#1f6feb;color:#fff;}
+
+/* ── EXPLOIT TABLE ── */
+.exploit-hl{background:rgba(248,81,73,.06);border:1px solid rgba(248,81,73,.18);border-radius:10px;padding:14px;margin-bottom:18px;}
+.exploit-hl h3{font-size:13px;font-weight:700;color:#f85149;margin-bottom:10px;}
+
+@media print { #sidebar{display:none;} #main{margin-left:0;} }
 </style>
 </head>
 <body>
 
-<h1>🛡 Vulnerability Dashboard</h1>
-<p class="subtitle">Last updated: <span id="lastUpdated"></span> &nbsp;·&nbsp; Import Tenable CSV to populate live data</p>
-
-<!-- IMPORT BAR (global) -->
-<div class="import-bar" id="dropZone">
-  <div style="font-size:26px">📂</div>
-  <div class="itext">
-    <h3>Import Tenable CSV Export</h3>
-    <p>Tenable → Explore → Findings → Export as CSV &nbsp;·&nbsp; Drag & drop or browse</p>
+<!-- ══════════════════════════════ SIDEBAR ══════════════════════════════ -->
+<nav id="sidebar">
+  <div class="sb-logo">
+    <h1>🛡 VulnDash</h1>
+    <p id="sb-updated">Loading…</p>
   </div>
-  <label class="btn-import" for="csvFile">Choose CSV</label>
+
+  <div class="sb-section">Main</div>
+  <button class="sb-item active" onclick="showPage('overview',this)">
+    <span class="sb-icon">📊</span> Overview
+  </button>
+  <button class="sb-item" onclick="showPage('sla',this)">
+    <span class="sb-icon">⏱</span> SLA Tracker
+    <span class="sb-badge" id="sb-breach-count">0</span>
+  </button>
+  <button class="sb-item" onclick="showPage('teams',this)">
+    <span class="sb-icon">👥</span> Teams
+  </button>
+  <button class="sb-item" onclick="showPage('exploit',this)">
+    <span class="sb-icon">🔥</span> Exploitable
+    <span class="sb-badge" id="sb-kev-count">0</span>
+  </button>
+  <button class="sb-item" onclick="showPage('forecast',this)">
+    <span class="sb-icon">📈</span> Forecast
+  </button>
+  <button class="sb-item" onclick="showPage('findings',this)">
+    <span class="sb-icon">📋</span> All Findings
+  </button>
+
+  <hr class="sb-divider">
+  <div class="sb-section">Reports</div>
+  <button class="sb-item" onclick="showPage('leadership',this)">
+    <span class="sb-icon">📄</span> Leadership Report
+  </button>
+
+  <hr class="sb-divider">
+  <div class="sb-section">Export</div>
+  <button class="sb-item" onclick="exportPBI()">
+    <span class="sb-icon">📊</span> Export → Power BI
+  </button>
+  <button class="sb-item" onclick="exportExcel()">
+    <span class="sb-icon">📗</span> Export → Excel
+  </button>
+  <button class="sb-item" onclick="exportCSV()">
+    <span class="sb-icon">📥</span> Export → CSV
+  </button>
+
+  <hr class="sb-divider">
+  <div class="sb-section">Notifications</div>
+  <button class="sb-item" onclick="openTeamsModal()">
+    <span class="sb-icon">💬</span> Notify via Teams
+  </button>
+
+  <div class="sb-footer">
+    <span id="sb-total">0 findings</span>
+    <span id="sb-region">All Regions</span>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════ MAIN ══════════════════════════════ -->
+<div id="main">
+
+<!-- Import Bar -->
+<div class="import-bar" id="dropZone">
+  <div style="font-size:24px">📂</div>
+  <div class="itext">
+    <h3>Import Tenable CSV</h3>
+    <p>Explore → Findings → Export as CSV &nbsp;·&nbsp; Drag & drop or browse</p>
+  </div>
+  <label class="btn-imp" for="csvFile">Choose CSV</label>
   <input type="file" id="csvFile" accept=".csv">
   <span id="importStatus"></span>
 </div>
 
-<!-- NAV -->
-<div class="nav">
-  <button class="nav-tab active" onclick="showPage('overview')">📊 Overview</button>
-  <button class="nav-tab" onclick="showPage('sla')">⏱ SLA Tracker</button>
-  <button class="nav-tab" onclick="showPage('teams')">👥 Teams</button>
-  <button class="nav-tab" onclick="showPage('exploit')">🔥 Exploitable</button>
-  <button class="nav-tab" onclick="showPage('forecast')">📈 Forecast</button>
-  <button class="nav-tab" onclick="showPage('findings')">📋 All Findings</button>
-  <button class="nav-tab" onclick="showPage('leadership')">📄 Leadership Report</button>
-</div>
-
-<!-- ═══════════════════════════════════════════════════ PAGE: OVERVIEW -->
+<!-- ── PAGE: OVERVIEW ── -->
 <div class="page active" id="page-overview">
+  <div class="topbar"><h2>📊 Overview</h2></div>
   <div class="cards" id="cards-overview"></div>
   <div class="chart-grid-3">
     <div class="cw">
-      <div class="cw-h"><h2>Week-over-Week Trend</h2><button onclick="openTrendModal()" style="font-size:10px;padding:3px 9px">+ Week</button></div>
+      <div class="cw-h"><h2>Week-over-Week Trend</h2><button onclick="openTrendModal()" style="font-size:10px;padding:3px 8px">+ Week</button></div>
       <div class="ci"><canvas id="trendChart"></canvas></div>
     </div>
-    <div class="cw"><h2>VPR Score Distribution</h2><div class="ci"><canvas id="vprChart"></canvas></div></div>
+    <div class="cw"><h2>VPR Distribution</h2><div class="ci"><canvas id="vprChart"></canvas></div></div>
     <div class="cw"><h2>Severity Breakdown</h2>
       <div class="donut-wrap"><canvas id="donutChart"></canvas>
         <div class="donut-center"><div class="big" id="donutTotal">0</div><div class="sm">Open</div></div>
@@ -277,44 +348,51 @@ tr:hover td { background: #1c2128; cursor: pointer; }
   </div>
   <div class="chart-grid-2">
     <div class="cw"><h2>Findings by Team</h2><div class="ci"><canvas id="teamBarChart"></canvas></div></div>
-    <div class="cw"><h2>Top 10 Exploitable by VPR</h2><div class="ci-tall"><canvas id="topVprChart"></canvas></div></div>
+    <div class="cw"><h2>Top 10 by VPR</h2><div class="ci-tall"><canvas id="topVprChart"></canvas></div></div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════ PAGE: SLA -->
+<!-- ── PAGE: SLA ── -->
 <div class="page" id="page-sla">
+  <div class="topbar"><h2>⏱ SLA Tracker</h2>
+    <div class="topbar-right"><button class="primary" onclick="exportSlaCSV()">⬇ Export SLA CSV</button></div>
+  </div>
   <div class="sla-bands" id="slaBands"></div>
   <div class="chart-grid-2">
     <div class="cw"><h2>SLA Status Distribution</h2><div class="ci"><canvas id="slaDonut"></canvas></div></div>
-    <div class="cw"><h2>Days Overdue — Top Breaches</h2><div class="ci"><canvas id="slaBreachBar"></canvas></div></div>
+    <div class="cw"><h2>Top Breaches — Days Overdue</h2><div class="ci"><canvas id="slaBreachBar"></canvas></div></div>
   </div>
-  <div class="table-wrap" style="margin-top:16px">
+  <div class="table-wrap">
     <div class="table-header">
-      <span class="th-title">SLA Tracker</span>
-      <div class="toolbar"><input id="slaSearch" type="text" placeholder="Search…" oninput="renderSlaTable()"><button class="primary" onclick="exportSlaCSV()">⬇ Export SLA CSV</button></div>
+      <span class="th-title">SLA Details</span>
+      <div class="toolbar"><input id="slaSearch" class="srch" type="text" placeholder="Search…" oninput="renderSlaTable()"></div>
     </div>
     <div class="table-outer"><table><thead><tr>
-      <th>Asset</th><th>Severity</th><th>Plugin</th><th>CVE</th><th>Team</th><th>Age (days)</th><th>SLA Limit</th><th>Days Left / Over</th><th>SLA Status</th><th>State</th>
+      <th>Asset</th><th>Severity</th><th>Plugin</th><th>CVE</th><th>Team</th><th>Age</th><th>SLA Limit</th><th>Days Left/Over</th><th>Status</th><th>State</th>
     </tr></thead><tbody id="slaTbody"></tbody></table></div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════ PAGE: TEAMS -->
+<!-- ── PAGE: TEAMS ── -->
 <div class="page" id="page-teams">
+  <div class="topbar"><h2>👥 Teams</h2>
+    <div class="topbar-right">
+      <button class="teal" onclick="openTeamsModal()">💬 Notify Team Owner</button>
+    </div>
+  </div>
   <div class="team-grid" id="teamCards"></div>
   <div class="chart-grid-2">
-    <div class="cw"><h2>Open Findings per Team by Severity</h2><div class="ci-tall"><canvas id="teamStackChart"></canvas></div></div>
+    <div class="cw"><h2>Open Findings by Team + Severity</h2><div class="ci-tall"><canvas id="teamStackChart"></canvas></div></div>
     <div class="cw"><h2>SLA Breach Rate by Team</h2><div class="ci-tall"><canvas id="teamSlaChart"></canvas></div></div>
   </div>
   <div class="table-wrap">
     <div class="table-header">
-      <span class="th-title">Team Assignment</span>
+      <span class="th-title">Team Findings</span>
       <div class="toolbar">
-        <select id="teamFilter" onchange="renderTeamTable()" style="background:#0d1117;border:1px solid #30363d;color:#e6edf3;padding:5px 10px;border-radius:6px;font-size:12px">
-          <option value="All">All Teams</option>
-          <option>Endpoint</option><option>Server</option><option>Network</option><option>Application</option>
+        <select id="teamFilter" onchange="renderTeamTable()" style="background:#0d1117;border:1px solid #30363d;color:#e6edf3;padding:5px 9px;border-radius:6px;font-size:12px">
+          <option>All</option><option>Endpoint</option><option>Server</option><option>Network</option><option>Application</option>
         </select>
-        <input id="teamSearch" type="text" placeholder="Search…" oninput="renderTeamTable()">
+        <input id="teamSearch" class="srch" type="text" placeholder="Search…" oninput="renderTeamTable()">
       </div>
     </div>
     <div class="table-outer"><table><thead><tr>
@@ -323,21 +401,26 @@ tr:hover td { background: #1c2128; cursor: pointer; }
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════ PAGE: EXPLOITABLE -->
+<!-- ── PAGE: EXPLOITABLE ── -->
 <div class="page" id="page-exploit">
+  <div class="topbar"><h2>🔥 Exploitable</h2>
+    <div class="topbar-right"><button class="primary" onclick="exportExploitCSV()">⬇ Export Exploitable</button></div>
+  </div>
   <div class="cards" id="cards-exploit"></div>
-  <div class="exploit-highlight">
-    <h3>🔥 CISA KEV — Known Exploited Vulnerabilities</h3>
-    <table class="exploit-table" id="kevTable"><thead><tr><th>Asset</th><th>Plugin</th><th>CVE</th><th>VPR</th><th>EPSS</th><th>Age</th><th>Team</th><th>SLA</th></tr></thead><tbody id="kevTbody"></tbody></table>
+  <div class="exploit-hl">
+    <h3>🚨 CISA KEV — Known Exploited Vulnerabilities</h3>
+    <div class="table-outer"><table><thead><tr>
+      <th>Asset</th><th>Plugin</th><th>CVE</th><th>VPR</th><th>EPSS</th><th>Age</th><th>Team</th><th>SLA</th>
+    </tr></thead><tbody id="kevTbody"></tbody></table></div>
   </div>
   <div class="chart-grid-2">
     <div class="cw"><h2>Exploitable by Severity</h2><div class="ci"><canvas id="exploitSevChart"></canvas></div></div>
-    <div class="cw"><h2>EPSS vs VPR (Exploit Risk Matrix)</h2><div class="ci"><canvas id="epssVprScatter"></canvas></div></div>
+    <div class="cw"><h2>EPSS vs VPR Risk Matrix</h2><div class="ci"><canvas id="epssVprScatter"></canvas></div></div>
   </div>
   <div class="table-wrap">
     <div class="table-header">
       <span class="th-title">All Exploitable Findings</span>
-      <div class="toolbar"><input id="exploitSearch" type="text" placeholder="Search…" oninput="renderExploitTable()"><button class="primary" onclick="exportExploitCSV()">⬇ Export Exploitable CSV</button></div>
+      <div class="toolbar"><input id="exploitSearch" class="srch" type="text" placeholder="Search…" oninput="renderExploitTable()"></div>
     </div>
     <div class="table-outer"><table><thead><tr>
       <th>Asset</th><th>Severity</th><th>VPR</th><th>EPSS</th><th>Plugin</th><th>CVE</th><th>Team</th><th>Flags</th><th>Age</th><th>SLA</th>
@@ -345,37 +428,43 @@ tr:hover td { background: #1c2128; cursor: pointer; }
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════ PAGE: FORECAST -->
+<!-- ── PAGE: FORECAST ── -->
 <div class="page" id="page-forecast">
+  <div class="topbar"><h2>📈 Forecast</h2></div>
   <div class="forecast-cards" id="forecastCards"></div>
   <div class="chart-grid-2">
     <div class="cw">
-      <div class="cw-h"><h2>Projected Open Findings (Next 4 Weeks)</h2><button onclick="openTrendModal()" style="font-size:10px;padding:3px 9px">+ Week</button></div>
+      <div class="cw-h"><h2>Projected Trend (Next 4 Weeks)</h2><button onclick="openTrendModal()" style="font-size:10px;padding:3px 8px">+ Week</button></div>
       <div class="ci-tall"><canvas id="forecastChart"></canvas></div>
     </div>
-    <div class="cw"><h2>Incoming Risk — Aging Breakdown</h2><div class="ci-tall"><canvas id="agingChart"></canvas></div></div>
+    <div class="cw"><h2>Aging Breakdown</h2><div class="ci-tall"><canvas id="agingChart"></canvas></div></div>
   </div>
-  <div class="cw" style="margin-bottom:16px">
-    <h2>SLA Expiry Calendar (Next 30 Days)</h2>
-    <div id="expiryList" style="max-height:220px;overflow-y:auto;margin-top:8px"></div>
+  <div class="cw">
+    <h2>SLA Expiry — Next 30 Days</h2>
+    <div id="expiryList" style="max-height:200px;overflow-y:auto;margin-top:8px"></div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════ PAGE: ALL FINDINGS -->
+<!-- ── PAGE: ALL FINDINGS ── -->
 <div class="page" id="page-findings">
+  <div class="topbar"><h2>📋 All Findings</h2>
+    <div class="topbar-right">
+      <button class="primary" onclick="exportCSV()">⬇ CSV</button>
+      <button class="success" onclick="exportPBI()">📊 Power BI</button>
+      <button class="orange" onclick="exportExcel()">📗 Excel</button>
+    </div>
+  </div>
   <div class="tab-row" id="tabRow"></div>
   <div class="table-wrap">
     <div class="table-header">
-      <span class="th-title">All Findings <span id="rowCount" style="font-size:11px;color:#8b949e;font-weight:400;margin-left:5px"></span></span>
+      <span class="th-title">Findings <span id="rowCount" style="font-size:11px;color:#8b949e;font-weight:400;margin-left:5px"></span></span>
       <div class="toolbar">
-        <input id="search" type="text" placeholder="Search asset, CVE, plugin…">
+        <input id="search" class="srch" type="text" placeholder="Search…">
         <button onclick="toggleAddRow()">+ Add Row</button>
-        <button class="primary" onclick="exportCSV()">⬇ Export CSV</button>
-        <button class="success" onclick="exportPBI()">⬇ Export Power BI</button>
       </div>
     </div>
     <div id="addRowForm">
-      <h3 style="font-size:12px;font-weight:600;color:#58a6ff;margin-bottom:10px">New Finding</h3>
+      <h3 style="font-size:12px;font-weight:600;color:#58a6ff;margin-bottom:9px">New Finding</h3>
       <div class="fg">
         <div><label>Asset</label><input id="f_asset" placeholder="LAPTOP-US-001"></div>
         <div><label>Region</label><select id="f_region"><option>US</option><option>UK</option><option>AU</option><option>DE</option><option>Other</option></select></div>
@@ -392,94 +481,88 @@ tr:hover td { background: #1c2128; cursor: pointer; }
     </div>
     <div class="table-outer"><table>
       <thead><tr>
-        <th class="sortable" data-col="asset">Asset</th>
-        <th class="sortable" data-col="severity">Severity</th>
-        <th class="sortable" data-col="vpr">VPR</th>
-        <th class="sortable" data-col="epss">EPSS</th>
-        <th class="sortable" data-col="plugin">Plugin</th>
-        <th class="sortable" data-col="cve">CVE</th>
-        <th class="sortable" data-col="team">Team</th>
-        <th class="sortable" data-col="age">Age</th>
-        <th>SLA</th>
-        <th>Flags</th>
-        <th class="sortable" data-col="state">State</th>
+        <th class="s" data-col="asset">Asset</th>
+        <th class="s" data-col="severity">Severity</th>
+        <th class="s" data-col="vpr">VPR</th>
+        <th class="s" data-col="epss">EPSS</th>
+        <th class="s" data-col="plugin">Plugin</th>
+        <th class="s" data-col="cve">CVE</th>
+        <th class="s" data-col="team">Team</th>
+        <th class="s" data-col="age">Age</th>
+        <th>SLA</th><th>Flags</th>
+        <th class="s" data-col="state">State</th>
       </tr></thead>
       <tbody id="tbody"></tbody>
     </table></div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════ PAGE: LEADERSHIP -->
+<!-- ── PAGE: LEADERSHIP ── -->
 <div class="page" id="page-leadership">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+  <div class="topbar">
     <div>
-      <h2 style="font-size:18px;font-weight:700;color:#e6edf3">Executive Vulnerability Report</h2>
-      <div style="font-size:12px;color:#8b949e">Generated: <span id="ldrDate"></span></div>
+      <h2>📄 Leadership Report</h2>
+      <div style="font-size:12px;color:#8b949e;margin-top:2px">Generated: <span id="ldrDate"></span></div>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="primary" onclick="exportLeadershipCSV()">⬇ Download Report CSV</button>
-      <button class="success" onclick="exportPBI()">⬇ Export to Power BI</button>
-      <button class="purple" onclick="window.print()">🖨 Print / PDF</button>
+    <div class="topbar-right">
+      <button class="primary" onclick="exportLeadershipCSV()">⬇ Report CSV</button>
+      <button class="success" onclick="exportPBI()">📊 Power BI</button>
+      <button class="orange" onclick="exportExcel()">📗 Excel</button>
+      <button class="purple" onclick="window.print()">🖨 Print/PDF</button>
+      <button class="teal" onclick="openTeamsModal()">💬 Send to Teams</button>
     </div>
   </div>
 
-  <!-- KPIs -->
-  <div class="ldr-section">
-    <h2>Program Health — Key Metrics</h2>
+  <div style="margin-bottom:16px">
+    <h3 style="font-size:14px;font-weight:600;color:#8b949e;margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em">Program Health</h3>
     <div class="ldr-kpi-row" id="ldrKpis"></div>
   </div>
 
-  <!-- Risk bar -->
-  <div class="ldr-section">
+  <div class="cw" style="margin-bottom:16px">
     <h2>Overall Risk Posture</h2>
     <div class="ldr-risk-bar" id="riskBar"></div>
-    <div style="display:flex;gap:16px;font-size:11px;color:#8b949e;margin-top:6px">
-      <span style="color:#f85149">■ Critical</span>
-      <span style="color:#e3b341">■ High</span>
-      <span style="color:#d29922">■ Medium</span>
-      <span style="color:#3fb950">■ Low</span>
+    <div style="display:flex;gap:14px;font-size:11px;color:#8b949e;margin-top:5px">
+      <span style="color:#f85149">■ Critical</span><span style="color:#e3b341">■ High</span>
+      <span style="color:#d29922">■ Medium</span><span style="color:#3fb950">■ Low</span>
     </div>
   </div>
 
-  <!-- Team summary table -->
-  <div class="ldr-section">
-    <h2>Team Accountability Summary</h2>
-    <table class="ldr-table" id="ldrTeamTable">
-      <thead><tr><th>Team</th><th>Total Open</th><th>Critical</th><th>High</th><th>SLA Breached</th><th>Breach Rate</th><th>Avg VPR</th><th>KEV Count</th></tr></thead>
+  <div class="cw" style="margin-bottom:16px">
+    <h2>Team Accountability</h2>
+    <div class="table-outer"><table class="ldr-table">
+      <thead><tr><th>Team</th><th>Total Open</th><th>Critical</th><th>High</th><th>SLA Breached</th><th>Breach %</th><th>Avg VPR</th><th>KEV</th></tr></thead>
       <tbody id="ldrTeamTbody"></tbody>
-    </table>
+    </table></div>
   </div>
 
-  <!-- Top 5 risks -->
-  <div class="ldr-section">
-    <h2>Top 5 Highest Risk Findings</h2>
-    <table class="ldr-table" id="ldrTop5">
-      <thead><tr><th>Asset</th><th>Vulnerability</th><th>CVE</th><th>VPR</th><th>EPSS</th><th>Team</th><th>Age</th><th>SLA Status</th><th>Flags</th></tr></thead>
+  <div class="cw" style="margin-bottom:16px">
+    <h2>Top 5 Highest Risk</h2>
+    <div class="table-outer"><table class="ldr-table">
+      <thead><tr><th>Asset</th><th>Vulnerability</th><th>CVE</th><th>VPR</th><th>EPSS</th><th>Team</th><th>Age</th><th>SLA</th><th>Flags</th></tr></thead>
       <tbody id="ldrTop5Tbody"></tbody>
-    </table>
+    </table></div>
   </div>
 
-  <!-- Action items -->
-  <div class="ldr-section">
-    <h2>Recommended Actions</h2>
+  <div style="margin-bottom:16px">
+    <h3 style="font-size:14px;font-weight:600;color:#8b949e;margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em">Recommended Actions</h3>
     <div id="ldrActions"></div>
   </div>
 
-  <!-- Trend chart -->
-  <div class="ldr-section">
+  <div class="cw">
     <h2>Vulnerability Trend</h2>
-    <div class="cw"><div class="ci"><canvas id="ldrTrendChart"></canvas></div></div>
+    <div class="ci"><canvas id="ldrTrendChart"></canvas></div>
   </div>
 </div>
 
-<!-- Detail Panel -->
+</div><!-- end #main -->
+
+<!-- ══════ PANELS & MODALS ══════ -->
 <div class="panel-bg" id="panelBg" onclick="closePanel()"></div>
 <div class="panel" id="detailPanel">
   <button class="close-btn" onclick="closePanel()">✕</button>
   <div id="panelContent"></div>
 </div>
 
-<!-- Trend Modal -->
 <div class="modal-bg" id="trendModal">
   <div class="modal">
     <h3>Add Weekly Snapshot</h3>
@@ -492,789 +575,585 @@ tr:hover td { background: #1c2128; cursor: pointer; }
   </div>
 </div>
 
+<!-- Teams Notify Modal -->
+<div class="teams-modal-bg" id="teamsModal">
+  <div class="teams-modal">
+    <h3>💬 Notify via Microsoft Teams</h3>
+    <label>Webhook URL (Teams Incoming Webhook)</label>
+    <input id="teams_webhook" placeholder="https://outlook.office.com/webhook/...">
+    <label>Team / Owner</label>
+    <select id="teams_team" style="background:#0d1117;border:1px solid #30363d;color:#e6edf3;padding:7px 10px;border-radius:6px;font-size:12px;width:100%">
+      <option>All Teams</option><option>Endpoint</option><option>Server</option><option>Network</option><option>Application</option>
+    </select>
+    <label>Message</label>
+    <textarea id="teams_msg"></textarea>
+    <label style="font-size:10px;color:#484f58;margin-top:6px">
+      ℹ️ To get a webhook URL: Teams → Channel → ··· → Connectors → Incoming Webhook → Configure
+    </label>
+    <div class="ma">
+      <button class="primary" onclick="sendTeamsNotification()">Send Notification</button>
+      <button onclick="document.getElementById('teamsModal').classList.remove('open')">Cancel</button>
+    </div>
+    <div id="teamsStatus" style="font-size:12px;margin-top:10px;color:#3fb950"></div>
+  </div>
+</div>
+
 <script>
-// ═══════════════════════════════════════════════════════════════
-//  DATA
-// ═══════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════
+// DATA
+// ════════════════════════════════════════════════════════
 let VULN_DATA = [
-  { asset:"LAPTOP-US-001",   ip:"10.1.1.10",  os:"Windows 11",   region:"US", team:"Endpoint",    severity:"Critical", plugin:"Log4Shell RCE",                    cve:"CVE-2021-44228", vpr:9.8, epss:0.97, cvss3:10.0, age:92,  state:"Open",       exploited:true,  malware:true,  news:true,  kev:true,  solution:"Update log4j to 2.17.1 or later.",                                 synopsis:"Remote code execution via JNDI injection in Apache Log4j.", refs:["https://nvd.nist.gov/vuln/detail/CVE-2021-44228","https://www.cisa.gov/known-exploited-vulnerabilities-catalog"] },
-  { asset:"LAPTOP-UK-042",   ip:"10.2.1.42",  os:"Windows 10",   region:"UK", team:"Endpoint",    severity:"Critical", plugin:"ProxyLogon Exchange RCE",           cve:"CVE-2021-26855", vpr:9.5, epss:0.94, cvss3:9.8,  age:74,  state:"Open",       exploited:true,  malware:false, news:true,  kev:true,  solution:"Apply Microsoft Exchange KB5000871.",                               synopsis:"Pre-auth SSRF in Microsoft Exchange leading to RCE.", refs:["https://nvd.nist.gov/vuln/detail/CVE-2021-26855"] },
-  { asset:"SERVER-PROD-03",  ip:"10.1.2.3",   os:"Ubuntu 20.04", region:"US", team:"Server",      severity:"High",     plugin:"Apache HTTP Path Traversal",        cve:"CVE-2021-41773", vpr:8.1, epss:0.88, cvss3:9.8,  age:45,  state:"Open",       exploited:true,  malware:false, news:true,  kev:false, solution:"Upgrade Apache HTTPD to 2.4.51+.",                                  synopsis:"Path traversal and RCE in Apache 2.4.49.", refs:["https://nvd.nist.gov/vuln/detail/CVE-2021-41773"] },
-  { asset:"LAPTOP-AU-007",   ip:"10.3.1.7",   os:"Windows 11",   region:"AU", team:"Endpoint",    severity:"High",     plugin:"Mozilla Firefox < 148.0",           cve:"CVE-2026-1100",  vpr:7.4, epss:0.62, cvss3:8.8,  age:12,  state:"Open",       exploited:false, malware:false, news:false, kev:false, solution:"Update Firefox to 148.0+ via software center.",                     synopsis:"Memory corruption allowing arbitrary code execution.", refs:["https://nvd.nist.gov/vuln/detail/CVE-2026-1100"] },
-  { asset:"WORKSTATION-DE-9",ip:"10.4.1.9",   os:"Windows 10",   region:"DE", team:"Endpoint",    severity:"High",     plugin:"Dell Peripheral Manager < 1.7.6",  cve:"N/A",            vpr:6.8, epss:0.11, cvss3:7.8,  age:8,   state:"Remediated", exploited:false, malware:false, news:false, kev:false, solution:"Update Dell Peripheral Manager to 1.7.6.",                          synopsis:"Privilege escalation via insecure DLL loading.", refs:[] },
-  { asset:"SERVER-PROD-01",  ip:"10.1.2.1",   os:"Ubuntu 22.04", region:"US", team:"Server",      severity:"Medium",   plugin:"nginx SSL Upstream Injection",      cve:"CVE-2026-1642",  vpr:5.9, epss:0.33, cvss3:6.5,  age:21,  state:"Open",       exploited:false, malware:false, news:true,  kev:false, solution:"Upgrade nginx to latest stable release.",                           synopsis:"SSL upstream injection allowing traffic interception.", refs:["https://nvd.nist.gov/vuln/detail/CVE-2026-1642"] },
-  { asset:"ROUTER-CORE-01",  ip:"10.1.3.1",   os:"Cisco IOS 17", region:"US", team:"Network",     severity:"High",     plugin:"Cisco IOS RCE",                     cve:"CVE-2023-20198", vpr:9.1, epss:0.91, cvss3:10.0, age:55,  state:"Open",       exploited:true,  malware:false, news:true,  kev:true,  solution:"Apply Cisco IOS XE patch per CSCwh87343.",                          synopsis:"HTTP UI privilege escalation in Cisco IOS XE.", refs:["https://nvd.nist.gov/vuln/detail/CVE-2023-20198"] },
-  { asset:"APP-SERVER-02",   ip:"10.1.4.2",   os:"Windows Server 2019", region:"US", team:"Application", severity:"Critical", plugin:"Spring4Shell RCE",           cve:"CVE-2022-22965", vpr:9.0, epss:0.89, cvss3:9.8,  age:63,  state:"Open",       exploited:true,  malware:true,  news:true,  kev:true,  solution:"Upgrade Spring Framework to 5.3.18+ or 5.2.20+.",                  synopsis:"RCE via data binding in Spring MVC.", refs:["https://nvd.nist.gov/vuln/detail/CVE-2022-22965"] },
-  { asset:"LAPTOP-US-033",   ip:"10.1.1.33",  os:"Windows 11",   region:"US", team:"Endpoint",    severity:"Medium",   plugin:"Office Protected View Disabled",    cve:"N/A",            vpr:4.4, epss:0.05, cvss3:5.5,  age:5,   state:"Open",       exploited:false, malware:false, news:false, kev:false, solution:"Re-enable Protected View via GPO.",                                 synopsis:"Office Protected View disabled, increasing macro attack surface.", refs:[] },
-  { asset:"SWITCH-DIST-02",  ip:"10.1.3.2",   os:"Cisco NX-OS",  region:"US", team:"Network",     severity:"High",     plugin:"Cisco NX-OS BGP RCE",               cve:"CVE-2024-20399", vpr:8.4, epss:0.71, cvss3:9.1,  age:38,  state:"Open",       exploited:false, malware:false, news:true,  kev:false, solution:"Apply Cisco NX-OS patch per advisory cisco-sa-nxos-cmd-injection.", synopsis:"Command injection in Cisco NX-OS.", refs:["https://nvd.nist.gov/vuln/detail/CVE-2024-20399"] },
-  { asset:"LAPTOP-UK-011",   ip:"10.2.1.11",  os:"Windows 10",   region:"UK", team:"Endpoint",    severity:"Low",      plugin:"TLS 1.0 Enabled",                   cve:"N/A",            vpr:2.1, epss:0.01, cvss3:3.7,  age:60,  state:"Exception",  exploited:false, malware:false, news:false, kev:false, solution:"Disable TLS 1.0. Enforce TLS 1.2 minimum.",                        synopsis:"TLS 1.0 is deprecated and susceptible to BEAST/POODLE.", refs:[] },
-  { asset:"DB-SERVER-01",    ip:"10.1.5.1",   os:"Windows Server 2016", region:"US", team:"Server", severity:"Critical", plugin:"SQL Server Unsupported Version",  cve:"CVE-2023-36728", vpr:8.7, epss:0.55, cvss3:7.8,  age:110, state:"Open",       exploited:false, malware:false, news:false, kev:false, solution:"Upgrade SQL Server to a supported version.",                       synopsis:"Unsupported SQL Server version with known denial of service vulnerability.", refs:["https://nvd.nist.gov/vuln/detail/CVE-2023-36728"] },
-  { asset:"LAPTOP-AU-003",   ip:"10.3.1.3",   os:"macOS 14",     region:"AU", team:"Endpoint",    severity:"Low",      plugin:"SMB Signing Disabled",              cve:"N/A",            vpr:3.2, epss:0.02, cvss3:4.3,  age:30,  state:"Open",       exploited:false, malware:false, news:false, kev:false, solution:"Enable SMB signing via GPO.",                                      synopsis:"SMB signing not enforced, allowing relay attacks.", refs:[] },
-  { asset:"SERVER-DEV-02",   ip:"10.1.2.9",   os:"Ubuntu 20.04", region:"UK", team:"Server",      severity:"Info",     plugin:"Open Port Detection (8080)",        cve:"N/A",            vpr:0.0, epss:0.00, cvss3:0.0,  age:3,   state:"Open",       exploited:false, malware:false, news:false, kev:false, solution:"Review whether port 8080 should be externally accessible.",       synopsis:"Port 8080 open, may expose a web service.", refs:[] },
+  { asset:"LAPTOP-US-001",   ip:"10.1.1.10",  os:"Windows 11",          region:"US", team:"Endpoint",    severity:"Critical", plugin:"Log4Shell RCE",                   cve:"CVE-2021-44228", vpr:9.8, epss:0.97, cvss3:10.0, age:92,  state:"Open",       exploited:true,  malware:true,  news:true,  kev:true,  solution:"Update log4j to 2.17.1+.",            synopsis:"RCE via JNDI injection in Apache Log4j.",            refs:["https://nvd.nist.gov/vuln/detail/CVE-2021-44228"] },
+  { asset:"LAPTOP-UK-042",   ip:"10.2.1.42",  os:"Windows 10",          region:"UK", team:"Endpoint",    severity:"Critical", plugin:"ProxyLogon Exchange RCE",         cve:"CVE-2021-26855", vpr:9.5, epss:0.94, cvss3:9.8,  age:74,  state:"Open",       exploited:true,  malware:false, news:true,  kev:true,  solution:"Apply Exchange KB5000871.",           synopsis:"Pre-auth SSRF in Exchange leading to RCE.",          refs:["https://nvd.nist.gov/vuln/detail/CVE-2021-26855"] },
+  { asset:"SERVER-PROD-03",  ip:"10.1.2.3",   os:"Ubuntu 20.04",        region:"US", team:"Server",      severity:"High",     plugin:"Apache HTTP Path Traversal",      cve:"CVE-2021-41773", vpr:8.1, epss:0.88, cvss3:9.8,  age:45,  state:"Open",       exploited:true,  malware:false, news:true,  kev:false, solution:"Upgrade Apache HTTPD to 2.4.51+.",    synopsis:"Path traversal and RCE in Apache 2.4.49.",           refs:["https://nvd.nist.gov/vuln/detail/CVE-2021-41773"] },
+  { asset:"ROUTER-CORE-01",  ip:"10.1.3.1",   os:"Cisco IOS XE 17",     region:"US", team:"Network",     severity:"Critical", plugin:"Cisco IOS XE RCE",                cve:"CVE-2023-20198", vpr:9.1, epss:0.91, cvss3:10.0, age:55,  state:"Open",       exploited:true,  malware:false, news:true,  kev:true,  solution:"Apply Cisco patch CSCwh87343.",       synopsis:"HTTP UI privilege escalation in Cisco IOS XE.",      refs:["https://nvd.nist.gov/vuln/detail/CVE-2023-20198"] },
+  { asset:"APP-SERVER-02",   ip:"10.1.4.2",   os:"Windows Server 2019", region:"US", team:"Application", severity:"Critical", plugin:"Spring4Shell RCE",                cve:"CVE-2022-22965", vpr:9.0, epss:0.89, cvss3:9.8,  age:63,  state:"Open",       exploited:true,  malware:true,  news:true,  kev:true,  solution:"Upgrade Spring Framework to 5.3.18+.", synopsis:"RCE via data binding in Spring MVC.",                refs:["https://nvd.nist.gov/vuln/detail/CVE-2022-22965"] },
+  { asset:"LAPTOP-AU-007",   ip:"10.3.1.7",   os:"Windows 11",          region:"AU", team:"Endpoint",    severity:"High",     plugin:"Mozilla Firefox < 148.0",         cve:"CVE-2026-1100",  vpr:7.4, epss:0.62, cvss3:8.8,  age:12,  state:"Open",       exploited:false, malware:false, news:false, kev:false, solution:"Update Firefox to 148.0+.",          synopsis:"Memory corruption allowing arbitrary code execution.", refs:[] },
+  { asset:"DB-SERVER-01",    ip:"10.1.5.1",   os:"Windows Server 2016", region:"US", team:"Server",      severity:"Critical", plugin:"SQL Server Unsupported",          cve:"CVE-2023-36728", vpr:8.7, epss:0.55, cvss3:7.8,  age:110, state:"Open",       exploited:false, malware:false, news:false, kev:false, solution:"Upgrade SQL Server to supported version.", synopsis:"Unsupported SQL Server with known DoS vulnerability.", refs:["https://nvd.nist.gov/vuln/detail/CVE-2023-36728"] },
+  { asset:"SERVER-PROD-01",  ip:"10.1.2.1",   os:"Ubuntu 22.04",        region:"US", team:"Server",      severity:"Medium",   plugin:"nginx SSL Upstream Injection",    cve:"CVE-2026-1642",  vpr:5.9, epss:0.33, cvss3:6.5,  age:21,  state:"Open",       exploited:false, malware:false, news:true,  kev:false, solution:"Upgrade nginx to latest stable.",     synopsis:"SSL upstream injection allowing traffic interception.", refs:[] },
+  { asset:"SWITCH-DIST-02",  ip:"10.1.3.2",   os:"Cisco NX-OS",         region:"US", team:"Network",     severity:"High",     plugin:"Cisco NX-OS BGP RCE",             cve:"CVE-2024-20399", vpr:8.4, epss:0.71, cvss3:9.1,  age:38,  state:"Open",       exploited:false, malware:false, news:true,  kev:false, solution:"Apply Cisco NX-OS advisory patch.",   synopsis:"Command injection in Cisco NX-OS.",                  refs:[] },
+  { asset:"LAPTOP-US-033",   ip:"10.1.1.33",  os:"Windows 11",          region:"US", team:"Endpoint",    severity:"Medium",   plugin:"Office Protected View Disabled",  cve:"N/A",            vpr:4.4, epss:0.05, cvss3:5.5,  age:5,   state:"Open",       exploited:false, malware:false, news:false, kev:false, solution:"Re-enable Protected View via GPO.",   synopsis:"Office Protected View disabled.",                    refs:[] },
+  { asset:"LAPTOP-UK-011",   ip:"10.2.1.11",  os:"Windows 10",          region:"UK", team:"Endpoint",    severity:"Low",      plugin:"TLS 1.0 Enabled",                 cve:"N/A",            vpr:2.1, epss:0.01, cvss3:3.7,  age:60,  state:"Exception",  exploited:false, malware:false, news:false, kev:false, solution:"Disable TLS 1.0, enforce TLS 1.2.",   synopsis:"TLS 1.0 deprecated, susceptible to BEAST/POODLE.",   refs:[] },
+  { asset:"LAPTOP-AU-003",   ip:"10.3.1.3",   os:"macOS 14",            region:"AU", team:"Endpoint",    severity:"Low",      plugin:"SMB Signing Disabled",            cve:"N/A",            vpr:3.2, epss:0.02, cvss3:4.3,  age:30,  state:"Open",       exploited:false, malware:false, news:false, kev:false, solution:"Enable SMB signing via GPO.",         synopsis:"SMB signing not enforced, allows relay attacks.",     refs:[] },
 ];
 
 let TREND_DATA = [
-  { week:"May 7",  Critical:5, High:9,  Medium:12, Low:6 },
-  { week:"May 14", Critical:5, High:8,  Medium:11, Low:5 },
-  { week:"May 21", Critical:4, High:8,  Medium:10, Low:5 },
-  { week:"May 28", Critical:3, High:7,  Medium:9,  Low:4 },
-  { week:"Jun 4",  Critical:2, High:5,  Medium:7,  Low:2 },
+  {week:"May 7",  Critical:5,High:9, Medium:12,Low:6},
+  {week:"May 14", Critical:5,High:8, Medium:11,Low:5},
+  {week:"May 21", Critical:4,High:8, Medium:10,Low:5},
+  {week:"May 28", Critical:3,High:7, Medium:9, Low:4},
+  {week:"Jun 4",  Critical:2,High:5, Medium:7, Low:2},
 ];
 
-const SLA_LIMITS   = { Critical:30, High:60, Medium:90, Low:120, Info:120 };
-const SEV_ORDER    = { Critical:0, High:1, Medium:2, Low:3, Info:4 };
-const TEAM_ICONS   = { Endpoint:"💻", Server:"🖥", Network:"🌐", Application:"⚙️" };
-const VPR_COLOR    = v => v>=9?"#f85149":v>=7?"#e3b341":v>=4?"#d29922":v>=1?"#3fb950":"#8b949e";
+const SLA_LIM  = {Critical:30,High:60,Medium:90,Low:120,Info:120};
+const SEV_ORD  = {Critical:0,High:1,Medium:2,Low:3,Info:4};
+const TICONS   = {Endpoint:"💻",Server:"🖥",Network:"🌐",Application:"⚙️"};
+const VCLR     = v=>v>=9?"#f85149":v>=7?"#e3b341":v>=4?"#d29922":v>=1?"#3fb950":"#8b949e";
+let sortCol="severity",sortDir=1,activeRegion="All";
+let CH={};
 
-let sortCol="severity", sortDir=1, activeRegion="All";
-let charts = {};
-
-// ═══════════════════════════════════════════════════════════════
-//  NAV
-// ═══════════════════════════════════════════════════════════════
-function showPage(id) {
-  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-  document.querySelectorAll(".nav-tab").forEach(t => t.classList.remove("active"));
+// ════════════════════════════════════════════════════════
+// NAV
+// ════════════════════════════════════════════════════════
+function showPage(id,el){
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll(".sb-item").forEach(b=>b.classList.remove("active"));
   document.getElementById("page-"+id).classList.add("active");
-  event.target.classList.add("active");
-  if (id==="sla")        { renderSlaPage(); }
-  if (id==="teams")      { renderTeamsPage(); }
-  if (id==="exploit")    { renderExploitPage(); }
-  if (id==="forecast")   { renderForecastPage(); }
-  if (id==="findings")   { renderTable(); }
-  if (id==="leadership") { renderLeadership(); }
+  if(el)el.classList.add("active");
+  if(id==="sla")       renderSlaPage();
+  if(id==="teams")     renderTeamsPage();
+  if(id==="exploit")   renderExploitPage();
+  if(id==="forecast")  renderForecastPage();
+  if(id==="findings")  renderTable();
+  if(id==="leadership")renderLeadership();
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  SLA HELPERS
-// ═══════════════════════════════════════════════════════════════
-function slaLimit(v) { return SLA_LIMITS[v.severity] || 120; }
-function slaDaysLeft(v) { return slaLimit(v) - v.age; }
-function slaStatus(v) {
-  if (v.state==="Remediated"||v.state==="Exception") return "ok";
-  const left = slaDaysLeft(v);
-  if (left < 0) return "breach";
-  if (left < slaLimit(v)*0.2) return "warning";
-  return "ok";
+// ════════════════════════════════════════════════════════
+// SLA HELPERS
+// ════════════════════════════════════════════════════════
+const slaLim  = v=>SLA_LIM[v.severity]||120;
+const slaLeft = v=>slaLim(v)-v.age;
+function slaSt(v){
+  if(v.state==="Remediated"||v.state==="Exception")return"ok";
+  const l=slaLeft(v); if(l<0)return"breach"; if(l<slaLim(v)*.2)return"warning"; return"ok";
 }
-function slaLabel(v) {
-  if (v.state==="Remediated") return "✓ Done";
-  if (v.state==="Exception")  return "Exempt";
-  const left = slaDaysLeft(v);
-  if (left < 0) return `Breached ${Math.abs(left)}d`;
-  if (left < slaLimit(v)*0.2) return `${left}d left ⚠`;
-  return `${left}d left`;
+function slaLabel(v){
+  if(v.state==="Remediated")return"✓ Done";
+  if(v.state==="Exception") return"Exempt";
+  const l=slaLeft(v);
+  if(l<0)return`Breached ${Math.abs(l)}d`;
+  if(l<slaLim(v)*.2)return`${l}d left ⚠`;
+  return`${l}d left`;
 }
-function slaClass(v) {
-  const s = slaStatus(v);
-  return s==="breach"?"sla-breach":s==="warning"?"sla-warn":"sla-ok";
-}
+const slaCls=v=>{const s=slaSt(v);return s==="breach"?"sla-brea":s==="warning"?"sla-warn":"sla-ok";};
 
-// ═══════════════════════════════════════════════════════════════
-//  TEAM ASSIGNMENT (auto from asset name, can be overridden)
-// ═══════════════════════════════════════════════════════════════
-function inferTeam(asset, plugin) {
-  const a = (asset+"").toUpperCase(), p = (plugin+"").toLowerCase();
-  if (a.includes("ROUTER")||a.includes("SWITCH")||a.includes("FIREWALL")||p.includes("cisco")||p.includes("bgp")||p.includes("ospf")) return "Network";
-  if (a.includes("APP")||a.includes("WEB")||p.includes("spring")||p.includes("tomcat")||p.includes("log4")||p.includes("apache")) return "Application";
-  if (a.includes("SERVER")||a.includes("DB")||a.includes("SRV")||p.includes("sql")||p.includes("nginx")||p.includes("iis")) return "Server";
-  return "Endpoint";
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  CSV IMPORT
-// ═══════════════════════════════════════════════════════════════
-document.getElementById("csvFile").addEventListener("change", e => {
-  const f = e.target.files[0]; if (!f) return;
-  const r = new FileReader(); r.onload = ev => parseTenable(ev.target.result, f.name); r.readAsText(f);
+// ════════════════════════════════════════════════════════
+// CSV IMPORT
+// ════════════════════════════════════════════════════════
+document.getElementById("csvFile").addEventListener("change",e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();r.onload=ev=>parseTenable(ev.target.result,f.name);r.readAsText(f);
 });
-const dz = document.getElementById("dropZone");
-dz.addEventListener("dragover", e => { e.preventDefault(); dz.style.borderColor="#58a6ff"; });
-dz.addEventListener("dragleave", () => { dz.style.borderColor="#30363d"; });
-dz.addEventListener("drop", e => {
-  e.preventDefault(); dz.style.borderColor="#30363d";
-  const f = e.dataTransfer.files[0];
-  if (f&&f.name.endsWith(".csv")) { const r=new FileReader(); r.onload=ev=>parseTenable(ev.target.result,f.name); r.readAsText(f); }
+const dz=document.getElementById("dropZone");
+dz.addEventListener("dragover",e=>{e.preventDefault();dz.style.borderColor="#58a6ff";});
+dz.addEventListener("dragleave",()=>{dz.style.borderColor="#30363d";});
+dz.addEventListener("drop",e=>{
+  e.preventDefault();dz.style.borderColor="#30363d";
+  const f=e.dataTransfer.files[0];
+  if(f&&f.name.endsWith(".csv")){const r=new FileReader();r.onload=ev=>parseTenable(ev.target.result,f.name);r.readAsText(f);}
 });
 
-function parseTenable(text, filename) {
-  const lines = text.trim().split(/\r?\n/);
-  if (lines.length < 2) return;
-  const headers = parseCSVLine(lines[0]).map(h=>h.trim().toLowerCase());
-  const get = (row, key, fb="") => { const i=headers.indexOf(key.toLowerCase()); return i>=0&&row[i]!==undefined?row[i].trim():fb; };
-  const imported = [];
-  for (let i=1;i<lines.length;i++) {
-    if (!lines[i].trim()) continue;
-    const row = parseCSVLine(lines[i]);
-    const asset  = get(row,"asset.name")||get(row,"asset.host_name")||get(row,"asset.display_fqdn")||get(row,"host")||"Unknown";
-    const plugin = get(row,"definition.name")||get(row,"plugin name")||"Unknown Plugin";
-    imported.push({
-      asset, ip:get(row,"asset.display_ipv4_address")||get(row,"ipv4"),
+function parseTenable(text,filename){
+  const lines=text.trim().split(/\r?\n/);if(lines.length<2)return;
+  const hdr=parseCSVLine(lines[0]).map(h=>h.trim().toLowerCase());
+  const get=(row,key,fb="")=>{const i=hdr.indexOf(key.toLowerCase());return i>=0&&row[i]!==undefined?row[i].trim():fb;};
+  const imp=[];
+  for(let i=1;i<lines.length;i++){
+    if(!lines[i].trim())continue;
+    const row=parseCSVLine(lines[i]);
+    const asset=get(row,"asset.name")||get(row,"asset.host_name")||get(row,"asset.display_fqdn")||get(row,"host")||"Unknown";
+    const plugin=get(row,"definition.name")||get(row,"plugin name")||"Unknown Plugin";
+    imp.push({
+      asset,ip:get(row,"asset.display_ipv4_address")||"",
       os:get(row,"asset.operating_system")||"",
       region:inferRegion(asset,get(row,"asset.tags")),
       team:inferTeam(asset,plugin),
-      severity:toTitle(get(row,"severity","Info")),
-      plugin, pluginId:get(row,"definition.id")||get(row,"plugin id"),
+      severity:toTit(get(row,"severity","Info")),
+      plugin,pluginId:get(row,"definition.id")||"",
       cve:get(row,"definition.cve")||get(row,"cve")||"N/A",
-      vpr:parseFloat(get(row,"definition.vpr.score")||get(row,"vpr")||"0")||0,
-      epss:parseFloat(get(row,"definition.epss.score")||get(row,"epss")||"0")||0,
+      vpr:parseFloat(get(row,"definition.vpr.score")||"0")||0,
+      epss:parseFloat(get(row,"definition.epss.score")||"0")||0,
       cvss3:parseFloat(get(row,"definition.cvss3.base_score")||"0")||0,
-      cvss2:parseFloat(get(row,"definition.cvss2.base_score")||"0")||0,
-      age:parseInt(get(row,"age_in_days")||get(row,"age")||get(row,"vuln_age")||"0")||0,
-      state:toTitle(get(row,"state","Open")),
-      solution:get(row,"definition.solution")||get(row,"solution")||"",
-      synopsis:get(row,"definition.synopsis")||get(row,"synopsis")||"",
-      refs:(get(row,"definition.see_also")||get(row,"see also")||"").split(/[\n,;]+/).map(r=>r.trim()).filter(Boolean),
-      exploited:boolF(get(row,"definition.exploited_by_nessus")||get(row,"exploited by nessus")),
-      malware:boolF(get(row,"definition.exploited_by_malware")||get(row,"exploited by malware")||get(row,"definition.malware")),
-      news:boolF(get(row,"definition.in_the_news")||get(row,"in the news")),
-      kev:boolF(get(row,"definition.vpr_v2.drivers_on_cisa_kev")||get(row,"on cisa kev")),
+      age:parseInt(get(row,"age_in_days")||get(row,"age")||"0")||0,
+      state:toTit(get(row,"state","Open")),
+      solution:get(row,"definition.solution")||"",
+      synopsis:get(row,"definition.synopsis")||"",
+      refs:(get(row,"definition.see_also")||"").split(/[\n,;]+/).map(r=>r.trim()).filter(Boolean),
+      exploited:boolF(get(row,"definition.exploited_by_nessus")),
+      malware:boolF(get(row,"definition.exploited_by_malware")||get(row,"definition.malware")),
+      news:boolF(get(row,"definition.in_the_news")),
+      kev:boolF(get(row,"definition.vpr_v2.drivers_on_cisa_kev")),
       family:get(row,"definition.family")||"",
       patch:get(row,"definition.patch_published")||"",
       exploit_ease:get(row,"definition.exploitability_ease")||"",
-      threat_int:get(row,"definition.vpr.drivers_threat_intensity")||"",
-      sla_date:get(row,"vuln_sla_date")||"",
-      first_seen:get(row,"first_observed")||get(row,"first seen")||"",
-      last_seen:get(row,"last_seen")||"",
-      port:get(row,"port")||"", protocol:get(row,"protocol")||"",
+      first_seen:get(row,"first_observed")||"",last_seen:get(row,"last_seen")||"",
+      port:get(row,"port")||"",protocol:get(row,"protocol")||"",
     });
   }
-  if (!imported.length) { document.getElementById("importStatus").textContent="⚠ No rows found"; return; }
-  VULN_DATA = imported;
-  document.getElementById("importStatus").textContent=`✓ ${imported.length} findings imported from ${filename}`;
-  document.getElementById("lastUpdated").textContent=new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
-  activeRegion="All";
-  refreshAll();
+  if(!imp.length){document.getElementById("importStatus").textContent="⚠ No rows found";return;}
+  VULN_DATA=imp;
+  document.getElementById("importStatus").textContent=`✓ ${imp.length} findings from ${filename}`;
+  document.getElementById("lastUpdated")?document.getElementById("lastUpdated").textContent=new Date().toLocaleDateString():null;
+  activeRegion="All";refreshAll();
 }
 
-function parseCSVLine(line) {
-  const result=[],re=/("(?:[^"]|"")*"|[^,]*),?/g; let m;
-  while((m=re.exec(line))!==null){if(m.index===re.lastIndex){re.lastIndex++;break;}let v=m[1];if(v.startsWith('"')&&v.endsWith('"'))v=v.slice(1,-1).replace(/""/g,'"');result.push(v);}
-  return result;
+function parseCSVLine(line){
+  const res=[],re=/("(?:[^"]|"")*"|[^,]*),?/g;let m;
+  while((m=re.exec(line))!==null){if(m.index===re.lastIndex){re.lastIndex++;break;}let v=m[1];if(v.startsWith('"')&&v.endsWith('"'))v=v.slice(1,-1).replace(/""/g,'"');res.push(v);}
+  return res;
 }
-function boolF(v) { return ["true","yes","1"].includes(String(v).toLowerCase()); }
-function toTitle(s) { return s?s.charAt(0).toUpperCase()+s.slice(1).toLowerCase():s; }
-function inferRegion(asset,tags) {
-  const s=(asset+" "+(tags||"")).toUpperCase();
-  if(s.includes("-UK-")||s.includes("_UK_")||s.includes("LONDON")||s.includes("UK"))return"UK";
-  if(s.includes("-AU-")||s.includes("_AU_")||s.includes("SYDNEY")||s.includes("AU"))return"AU";
-  if(s.includes("-DE-")||s.includes("_DE_")||s.includes("BERLIN")||s.includes("DE"))return"DE";
-  return"US";
-}
+const boolF=v=>["true","yes","1"].includes(String(v).toLowerCase());
+const toTit=s=>s?s.charAt(0).toUpperCase()+s.slice(1).toLowerCase():s;
+function inferRegion(a,t){const s=(a+" "+(t||"")).toUpperCase();if(s.includes("UK")||s.includes("LONDON"))return"UK";if(s.includes("AU")||s.includes("SYDNEY"))return"AU";if(s.includes("DE")||s.includes("BERLIN"))return"DE";return"US";}
+function inferTeam(a,p){const au=a.toUpperCase(),pl=(p||"").toLowerCase();if(au.includes("ROUTER")||au.includes("SWITCH")||au.includes("FIRE")||pl.includes("cisco")||pl.includes("bgp"))return"Network";if(au.includes("APP")||au.includes("WEB")||pl.includes("spring")||pl.includes("log4")||pl.includes("apache"))return"Application";if(au.includes("SERVER")||au.includes("DB")||au.includes("SRV")||pl.includes("sql")||pl.includes("nginx"))return"Server";return"Endpoint";}
 
-// ═══════════════════════════════════════════════════════════════
-//  OVERVIEW PAGE
-// ═══════════════════════════════════════════════════════════════
-function renderOverview() {
-  const src = VULN_DATA;
-  const c={Critical:0,High:0,Medium:0,Low:0}; let breaches=0,epssSum=0,epssN=0,exploitCount=0,kevCount=0;
-  src.forEach(v=>{
-    if(c[v.severity]!==undefined)c[v.severity]++;
-    if(slaStatus(v)==="breach")breaches++;
-    if(v.epss>0){epssSum+=v.epss;epssN++;}
-    if(v.exploited||v.kev)exploitCount++;
-    if(v.kev)kevCount++;
-  });
-  const total=Object.values(c).reduce((a,b)=>a+b,0);
-  const avgEpss=epssN?((epssSum/epssN)*100).toFixed(1):"—";
+// ════════════════════════════════════════════════════════
+// OVERVIEW
+// ════════════════════════════════════════════════════════
+function renderOverview(){
+  const src=VULN_DATA;
+  const c={Critical:0,High:0,Medium:0,Low:0};let br=0,es=0,en=0,ex=0,kv=0;
+  src.forEach(v=>{if(c[v.severity]!==undefined)c[v.severity]++;if(slaSt(v)==="breach")br++;if(v.epss>0){es+=v.epss;en++;}if(v.exploited||v.kev)ex++;if(v.kev)kv++;});
+  const tot=Object.values(c).reduce((a,b)=>a+b,0);
+  const avgE=en?((es/en)*100).toFixed(1):"—";
   document.getElementById("cards-overview").innerHTML=`
-    <div class="card c-total"><div class="lbl">Total</div><div class="val">${total}</div></div>
+    <div class="card c-total"><div class="lbl">Total</div><div class="val">${tot}</div></div>
     <div class="card c-crit"><div class="lbl">Critical</div><div class="val">${c.Critical}</div></div>
     <div class="card c-high"><div class="lbl">High</div><div class="val">${c.High}</div></div>
     <div class="card c-med"><div class="lbl">Medium</div><div class="val">${c.Medium}</div></div>
     <div class="card c-low"><div class="lbl">Low</div><div class="val">${c.Low}</div></div>
-    <div class="card c-breach"><div class="lbl">SLA Breached</div><div class="val">${breaches}</div></div>
-    <div class="card c-epss"><div class="lbl">Avg EPSS</div><div class="val">${avgEpss}%</div><div class="sub">exploit probability</div></div>
-    <div class="card c-exploit"><div class="lbl">Exploitable</div><div class="val">${exploitCount}</div></div>
-    <div class="card c-kev"><div class="lbl">CISA KEV</div><div class="val">${kevCount}</div></div>
+    <div class="card c-breach"><div class="lbl">SLA Breached</div><div class="val">${br}</div></div>
+    <div class="card c-epss"><div class="lbl">Avg EPSS</div><div class="val">${avgE}%</div><div class="sub">exploit probability</div></div>
+    <div class="card c-exploit"><div class="lbl">Exploitable</div><div class="val">${ex}</div></div>
+    <div class="card c-kev"><div class="lbl">CISA KEV</div><div class="val">${kv}</div></div>
   `;
-  renderDonut(); renderVprChart(); renderTrend(); renderTeamBar(); renderTopVpr();
+  // sidebar badges
+  document.getElementById("sb-breach-count").textContent=br;
+  document.getElementById("sb-kev-count").textContent=kv;
+  document.getElementById("sb-total").textContent=`${tot} findings`;
+  document.getElementById("sb-updated").textContent=new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+  renderDonut();renderVprChart();renderTrend();renderTeamBar();renderTopVpr();
 }
 
-function mkChart(id,config){ if(charts[id])charts[id].destroy(); charts[id]=new Chart(document.getElementById(id),config); return charts[id]; }
+function mkC(id,cfg){if(CH[id])CH[id].destroy();CH[id]=new Chart(document.getElementById(id),cfg);return CH[id];}
 
-function renderDonut() {
-  const open=VULN_DATA.filter(v=>v.state==="Open"||v.state==="In Progress");
-  const c={Critical:0,High:0,Medium:0,Low:0,Info:0};
-  open.forEach(v=>{if(c[v.severity]!==undefined)c[v.severity]++;});
+function renderDonut(){
+  const op=VULN_DATA.filter(v=>v.state==="Open"||v.state==="In Progress");
+  const c={Critical:0,High:0,Medium:0,Low:0,Info:0};op.forEach(v=>{if(c[v.severity]!==undefined)c[v.severity]++;});
   document.getElementById("donutTotal").textContent=Object.values(c).reduce((a,b)=>a+b,0);
-  mkChart("donutChart",{type:"doughnut",data:{labels:["Critical","High","Medium","Low","Info"],datasets:[{data:[c.Critical,c.High,c.Medium,c.Low,c.Info],backgroundColor:["#f85149","#e3b341","#d29922","#3fb950","#58a6ff"],borderColor:"#161b22",borderWidth:3,hoverOffset:6}]},options:{cutout:"72%",responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{color:"#8b949e",font:{size:10},padding:8,boxWidth:10}}}}});
+  mkC("donutChart",{type:"doughnut",data:{labels:["Critical","High","Medium","Low","Info"],datasets:[{data:[c.Critical,c.High,c.Medium,c.Low,c.Info],backgroundColor:["#f85149","#e3b341","#d29922","#3fb950","#58a6ff"],borderColor:"#161b22",borderWidth:3,hoverOffset:5}]},options:{cutout:"72%",responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{color:"#8b949e",font:{size:10},padding:8,boxWidth:10}}}}});
 }
-
-function renderVprChart() {
-  const bins=[0,0,0,0,0];
-  VULN_DATA.forEach(v=>{const s=v.vpr||0;if(s<2)bins[0]++;else if(s<4)bins[1]++;else if(s<6)bins[2]++;else if(s<8)bins[3]++;else bins[4]++;});
-  mkChart("vprChart",{type:"bar",data:{labels:["0–2","2–4","4–6","6–8","8–10"],datasets:[{label:"Findings",data:bins,backgroundColor:["#3fb950","#3fb950","#d29922","#e3b341","#f85149"],borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#8b949e"},grid:{color:"#21262d"}},y:{ticks:{color:"#8b949e"},grid:{color:"#21262d"},beginAtZero:true}}}});
+function renderVprChart(){
+  const bins=[0,0,0,0,0];VULN_DATA.forEach(v=>{const s=v.vpr||0;if(s<2)bins[0]++;else if(s<4)bins[1]++;else if(s<6)bins[2]++;else if(s<8)bins[3]++;else bins[4]++;});
+  mkC("vprChart",{type:"bar",data:{labels:["0–2","2–4","4–6","6–8","8–10"],datasets:[{data:bins,backgroundColor:["#3fb950","#3fb950","#d29922","#e3b341","#f85149"],borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#8b949e"},grid:{color:"#21262d"}},y:{ticks:{color:"#8b949e"},grid:{color:"#21262d"},beginAtZero:true}}}});
 }
-
-function renderTrend() {
+function renderTrend(){
   const cfg={type:"line",data:{labels:TREND_DATA.map(d=>d.week),datasets:[
     {label:"Critical",data:TREND_DATA.map(d=>d.Critical),borderColor:"#f85149",backgroundColor:"rgba(248,81,73,.1)",tension:.3,fill:true,pointRadius:3},
     {label:"High",    data:TREND_DATA.map(d=>d.High),    borderColor:"#e3b341",backgroundColor:"rgba(227,179,65,.1)",tension:.3,fill:true,pointRadius:3},
     {label:"Medium",  data:TREND_DATA.map(d=>d.Medium),  borderColor:"#d29922",backgroundColor:"rgba(210,153,34,.07)",tension:.3,fill:true,pointRadius:3},
     {label:"Low",     data:TREND_DATA.map(d=>d.Low),     borderColor:"#3fb950",backgroundColor:"rgba(63,185,80,.07)",tension:.3,fill:true,pointRadius:3},
   ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#8b949e",font:{size:11}}}},scales:{x:{ticks:{color:"#8b949e"},grid:{color:"#21262d"}},y:{ticks:{color:"#8b949e"},grid:{color:"#21262d"},beginAtZero:true}}}};
-  mkChart("trendChart",cfg);
-  if(document.getElementById("ldrTrendChart")) mkChart("ldrTrendChart",JSON.parse(JSON.stringify(cfg)));
+  mkC("trendChart",cfg);
+  try{mkC("ldrTrendChart",JSON.parse(JSON.stringify(cfg)));}catch(e){}
 }
-
-function renderTeamBar() {
-  const teams=["Endpoint","Server","Network","Application"];
-  const sevs=["Critical","High","Medium","Low"];
-  const colors={"Critical":"#f85149","High":"#e3b341","Medium":"#d29922","Low":"#3fb950"};
-  mkChart("teamBarChart",{type:"bar",data:{labels:teams,datasets:sevs.map(s=>({label:s,data:teams.map(t=>VULN_DATA.filter(v=>v.team===t&&v.severity===s&&v.state!=="Remediated").length),backgroundColor:colors[s],borderRadius:3,}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#8b949e",font:{size:10}}}},scales:{x:{stacked:true,ticks:{color:"#8b949e"},grid:{color:"#21262d"}},y:{stacked:true,ticks:{color:"#8b949e"},grid:{color:"#21262d"},beginAtZero:true}}}});
+function renderTeamBar(){
+  const teams=["Endpoint","Server","Network","Application"],sevs=["Critical","High","Medium","Low"],cols={Critical:"#f85149",High:"#e3b341",Medium:"#d29922",Low:"#3fb950"};
+  mkC("teamBarChart",{type:"bar",data:{labels:teams,datasets:sevs.map(s=>({label:s,data:teams.map(t=>VULN_DATA.filter(v=>v.team===t&&v.severity===s&&v.state!=="Remediated").length),backgroundColor:cols[s],borderRadius:3}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#8b949e",font:{size:10}}}},scales:{x:{stacked:true,ticks:{color:"#8b949e"},grid:{color:"#21262d"}},y:{stacked:true,ticks:{color:"#8b949e"},grid:{color:"#21262d"},beginAtZero:true}}}});
 }
-
-function renderTopVpr() {
+function renderTopVpr(){
   const top=VULN_DATA.filter(v=>v.state!=="Remediated").sort((a,b)=>(b.vpr||0)-(a.vpr||0)).slice(0,10);
-  mkChart("topVprChart",{type:"bar",data:{labels:top.map(v=>v.asset.length>15?v.asset.slice(0,15)+"…":v.asset),datasets:[{label:"VPR",data:top.map(v=>v.vpr||0),backgroundColor:top.map(v=>VPR_COLOR(v.vpr||0)),borderRadius:4,borderSkipped:false}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#8b949e"},grid:{color:"#21262d"},max:10},y:{ticks:{color:"#8b949e",font:{size:10}},grid:{color:"#21262d"}}}}});
+  mkC("topVprChart",{type:"bar",data:{labels:top.map(v=>v.asset.length>14?v.asset.slice(0,14)+"…":v.asset),datasets:[{data:top.map(v=>v.vpr||0),backgroundColor:top.map(v=>VCLR(v.vpr||0)),borderRadius:4,borderSkipped:false}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#8b949e"},grid:{color:"#21262d"},max:10},y:{ticks:{color:"#8b949e",font:{size:10}},grid:{color:"#21262d"}}}}});
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  SLA PAGE
-// ═══════════════════════════════════════════════════════════════
-function renderSlaPage() {
-  const open = VULN_DATA.filter(v=>v.state!=="Remediated"&&v.state!=="Exception");
-  // 4 bands: within SLA, within 20% of limit, breached 1-30d, breached >30d
-  const band1 = open.filter(v=>slaDaysLeft(v)>=slaLimit(v)*0.2);
-  const band2 = open.filter(v=>slaDaysLeft(v)>=0&&slaDaysLeft(v)<slaLimit(v)*0.2);
-  const band3 = open.filter(v=>slaDaysLeft(v)<0&&slaDaysLeft(v)>=-30);
-  const band4 = open.filter(v=>slaDaysLeft(v)<-30);
-
+// ════════════════════════════════════════════════════════
+// SLA PAGE
+// ════════════════════════════════════════════════════════
+function renderSlaPage(){
+  const op=VULN_DATA.filter(v=>v.state!=="Remediated"&&v.state!=="Exception");
+  const b1=op.filter(v=>slaLeft(v)>=slaLim(v)*.2);
+  const b2=op.filter(v=>slaLeft(v)>=0&&slaLeft(v)<slaLim(v)*.2);
+  const b3=op.filter(v=>slaLeft(v)<0&&slaLeft(v)>=-30);
+  const b4=op.filter(v=>slaLeft(v)<-30);
   document.getElementById("slaBands").innerHTML=`
-    <div class="sla-band band-ok">
-      <div class="band-label">Within SLA (30/60/90/120d)</div>
-      <div class="band-val">${band1.length}</div>
-      <div class="band-sub">Compliant</div>
-      <div class="band-bar" style="width:${pct(band1.length,open.length)}%"></div>
-    </div>
-    <div class="sla-band band-warn">
-      <div class="band-label">Approaching SLA (&lt;20% left)</div>
-      <div class="band-val">${band2.length}</div>
-      <div class="band-sub">Warning zone</div>
-      <div class="band-bar" style="width:${pct(band2.length,open.length)}%"></div>
-    </div>
-    <div class="sla-band band-breach">
-      <div class="band-label">Breached 1–30 Days</div>
-      <div class="band-val">${band3.length}</div>
-      <div class="band-sub">Needs immediate action</div>
-      <div class="band-bar" style="width:${pct(band3.length,open.length)}%"></div>
-    </div>
-    <div class="sla-band band-breach2">
-      <div class="band-label">Breached &gt;30 Days</div>
-      <div class="band-val">${band4.length}</div>
-      <div class="band-sub">Critical overdue</div>
-      <div class="band-bar" style="width:${pct(band4.length,open.length)}%"></div>
-    </div>
-  `;
-
-  mkChart("slaDonut",{type:"doughnut",data:{labels:["Within SLA","Approaching","Breached 1-30d","Breached >30d"],datasets:[{data:[band1.length,band2.length,band3.length,band4.length],backgroundColor:["#3fb950","#d29922","#e3b341","#f85149"],borderColor:"#161b22",borderWidth:3}]},options:{cutout:"65%",responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{color:"#8b949e",font:{size:10},padding:8,boxWidth:10}}}}});
-
-  const breached=VULN_DATA.filter(v=>slaStatus(v)==="breach").sort((a,b)=>slaDaysLeft(a)-slaDaysLeft(b)).slice(0,10);
-  mkChart("slaBreachBar",{type:"bar",data:{labels:breached.map(v=>v.asset.length>14?v.asset.slice(0,14)+"…":v.asset),datasets:[{label:"Days Overdue",data:breached.map(v=>Math.abs(slaDaysLeft(v))),backgroundColor:"#f85149",borderRadius:4}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#8b949e"},grid:{color:"#21262d"}},y:{ticks:{color:"#8b949e",font:{size:10}},grid:{color:"#21262d"}}}}});
-
+    <div class="sla-band band-ok"><div class="bl">Within SLA (30/60/90/120d)</div><div class="bv">${b1.length}</div><div class="bs">Compliant</div><div class="bb" style="width:${pct(b1.length,op.length)}%"></div></div>
+    <div class="sla-band band-warn"><div class="bl">Approaching (&lt;20% left)</div><div class="bv">${b2.length}</div><div class="bs">Warning zone</div><div class="bb" style="width:${pct(b2.length,op.length)}%"></div></div>
+    <div class="sla-band band-b1"><div class="bl">Breached 1–30 Days</div><div class="bv">${b3.length}</div><div class="bs">Immediate action needed</div><div class="bb" style="width:${pct(b3.length,op.length)}%"></div></div>
+    <div class="sla-band band-b2"><div class="bl">Breached &gt;30 Days</div><div class="bv">${b4.length}</div><div class="bs">Critical overdue</div><div class="bb" style="width:${pct(b4.length,op.length)}%"></div></div>`;
+  mkC("slaDonut",{type:"doughnut",data:{labels:["Within SLA","Approaching","Breached 1-30d","Breached >30d"],datasets:[{data:[b1.length,b2.length,b3.length,b4.length],backgroundColor:["#3fb950","#d29922","#e3b341","#f85149"],borderColor:"#161b22",borderWidth:3}]},options:{cutout:"65%",responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{color:"#8b949e",font:{size:10},padding:8,boxWidth:10}}}}});
+  const br=VULN_DATA.filter(v=>slaSt(v)==="breach").sort((a,b)=>slaLeft(a)-slaLeft(b)).slice(0,10);
+  mkC("slaBreachBar",{type:"bar",data:{labels:br.map(v=>v.asset.length>13?v.asset.slice(0,13)+"…":v.asset),datasets:[{label:"Days Overdue",data:br.map(v=>Math.abs(slaLeft(v))),backgroundColor:"#f85149",borderRadius:4}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#8b949e"},grid:{color:"#21262d"}},y:{ticks:{color:"#8b949e",font:{size:10}},grid:{color:"#21262d"}}}}});
   renderSlaTable();
 }
-
-function renderSlaTable() {
+function renderSlaTable(){
   const q=(document.getElementById("slaSearch")||{}).value||"";
-  const rows=VULN_DATA.filter(v=>!q||[v.asset,v.plugin,v.cve,v.team].some(s=>(s||"").toLowerCase().includes(q.toLowerCase())))
-    .sort((a,b)=>slaDaysLeft(a)-slaDaysLeft(b));
+  const rows=VULN_DATA.filter(v=>!q||[v.asset,v.plugin,v.cve,v.team].some(s=>(s||"").toLowerCase().includes(q.toLowerCase()))).sort((a,b)=>slaLeft(a)-slaLeft(b));
   document.getElementById("slaTbody").innerHTML=rows.map(v=>{
-    const left=slaDaysLeft(v), lim=slaLimit(v), sc=slaClass(v), sl=slaLabel(v);
-    return `<tr onclick="openPanel(${VULN_DATA.indexOf(v)})">
-      <td><strong>${v.asset}</strong></td>
-      <td><span class="badge ${v.severity}">${v.severity}</span></td>
-      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.plugin}</td>
-      <td>${cveLinkSmall(v.cve)}</td>
-      <td><span class="team-pill team-${v.team}">${v.team}</span></td>
-      <td>${v.age}d</td>
-      <td>${lim}d</td>
-      <td style="font-weight:700;color:${left<0?"#f85149":left<lim*.2?"#d29922":"#3fb950"}">${left<0?"+"+Math.abs(left)+"d overdue":left+"d left"}</td>
-      <td><span class="${sc}">${sl}</span></td>
-      <td>${v.state}</td>
-    </tr>`;
+    const l=slaLeft(v),lm=slaLim(v);
+    return`<tr onclick="openPanel(${VULN_DATA.indexOf(v)})"><td><strong>${v.asset}</strong></td><td><span class="badge ${v.severity}">${v.severity}</span></td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.plugin}</td><td>${cveLink(v.cve)}</td><td><span class="tp ${v.team}">${v.team}</span></td><td>${v.age}d</td><td>${lm}d</td><td style="font-weight:700;color:${l<0?"#f85149":l<lm*.2?"#d29922":"#3fb950"}">${l<0?"+"+Math.abs(l)+"d over":l+"d left"}</td><td><span class="${slaCls(v)}">${slaLabel(v)}</span></td><td>${v.state}</td></tr>`;
   }).join("");
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  TEAMS PAGE
-// ═══════════════════════════════════════════════════════════════
-function renderTeamsPage() {
+// ════════════════════════════════════════════════════════
+// TEAMS PAGE
+// ════════════════════════════════════════════════════════
+function renderTeamsPage(){
   const teams=["Endpoint","Server","Network","Application"];
   document.getElementById("teamCards").innerHTML=teams.map(t=>{
-    const tvs=VULN_DATA.filter(v=>v.team===t&&v.state!=="Remediated");
-    const c={Critical:0,High:0,Medium:0,Low:0};
-    let breaches=0,kevs=0;
-    tvs.forEach(v=>{if(c[v.severity]!==undefined)c[v.severity]++;if(slaStatus(v)==="breach")breaches++;if(v.kev)kevs++;});
-    return `<div class="team-card">
-      <div class="team-name"><span class="team-icon">${TEAM_ICONS[t]||"🔧"}</span>${t} Team</div>
-      <div class="team-row"><span class="tl">Total Open</span><strong>${tvs.length}</strong></div>
+    const tv=VULN_DATA.filter(v=>v.team===t&&v.state!=="Remediated");
+    const c={Critical:0,High:0};tv.forEach(v=>{if(c[v.severity]!==undefined)c[v.severity]++;});
+    const tb=tv.filter(v=>slaSt(v)==="breach").length,tk=tv.filter(v=>v.kev).length;
+    return`<div class="team-card"><div class="team-name">${TICONS[t]||"🔧"} ${t} Team</div>
+      <div class="team-row"><span class="tl">Total Open</span><strong>${tv.length}</strong></div>
       <div class="team-row"><span class="tl">Critical</span><strong style="color:#f85149">${c.Critical}</strong></div>
       <div class="team-row"><span class="tl">High</span><strong style="color:#e3b341">${c.High}</strong></div>
-      <div class="team-row"><span class="tl">Medium</span><strong style="color:#d29922">${c.Medium}</strong></div>
-      <div class="team-row"><span class="tl">SLA Breached</span><strong style="color:#f85149">${breaches}</strong></div>
-      <div class="team-row"><span class="tl">CISA KEV</span><strong style="color:#ff7b72">${kevs}</strong></div>
+      <div class="team-row"><span class="tl">SLA Breached</span><strong style="color:#f85149">${tb}</strong></div>
+      <div class="team-row"><span class="tl">CISA KEV</span><strong style="color:#ff7b72">${tk}</strong></div>
     </div>`;
   }).join("");
-
-  const sevs=["Critical","High","Medium","Low"];
-  const colors={"Critical":"#f85149","High":"#e3b341","Medium":"#d29922","Low":"#3fb950"};
-  mkChart("teamStackChart",{type:"bar",data:{labels:teams,datasets:sevs.map(s=>({label:s,data:teams.map(t=>VULN_DATA.filter(v=>v.team===t&&v.severity===s&&v.state!=="Remediated").length),backgroundColor:colors[s],borderRadius:2}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#8b949e",font:{size:10}}}},scales:{x:{stacked:true,ticks:{color:"#8b949e"},grid:{color:"#21262d"}},y:{stacked:true,ticks:{color:"#8b949e"},grid:{color:"#21262d"},beginAtZero:true}}}});
-
-  mkChart("teamSlaChart",{type:"bar",data:{labels:teams,datasets:[{label:"Breached",data:teams.map(t=>VULN_DATA.filter(v=>v.team===t&&slaStatus(v)==="breach").length),backgroundColor:"#f85149",borderRadius:4},{label:"Warning",data:teams.map(t=>VULN_DATA.filter(v=>v.team===t&&slaStatus(v)==="warning").length),backgroundColor:"#d29922",borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#8b949e",font:{size:10}}}},scales:{x:{ticks:{color:"#8b949e"},grid:{color:"#21262d"}},y:{ticks:{color:"#8b949e"},grid:{color:"#21262d"},beginAtZero:true}}}});
-
+  const sevs=["Critical","High","Medium","Low"],cols={Critical:"#f85149",High:"#e3b341",Medium:"#d29922",Low:"#3fb950"};
+  mkC("teamStackChart",{type:"bar",data:{labels:teams,datasets:sevs.map(s=>({label:s,data:teams.map(t=>VULN_DATA.filter(v=>v.team===t&&v.severity===s&&v.state!=="Remediated").length),backgroundColor:cols[s],borderRadius:2}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#8b949e",font:{size:10}}}},scales:{x:{stacked:true,ticks:{color:"#8b949e"},grid:{color:"#21262d"}},y:{stacked:true,ticks:{color:"#8b949e"},grid:{color:"#21262d"},beginAtZero:true}}}});
+  mkC("teamSlaChart",{type:"bar",data:{labels:teams,datasets:[{label:"Breached",data:teams.map(t=>VULN_DATA.filter(v=>v.team===t&&slaSt(v)==="breach").length),backgroundColor:"#f85149",borderRadius:4},{label:"Warning",data:teams.map(t=>VULN_DATA.filter(v=>v.team===t&&slaSt(v)==="warning").length),backgroundColor:"#d29922",borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#8b949e",font:{size:10}}}},scales:{x:{ticks:{color:"#8b949e"},grid:{color:"#21262d"}},y:{ticks:{color:"#8b949e"},grid:{color:"#21262d"},beginAtZero:true}}}});
   renderTeamTable();
 }
-
-function renderTeamTable() {
-  const tf=document.getElementById("teamFilter").value;
-  const q=(document.getElementById("teamSearch")||{}).value||"";
-  const rows=VULN_DATA.filter(v=>(tf==="All"||v.team===tf)&&(!q||[v.asset,v.plugin,v.cve].some(s=>(s||"").toLowerCase().includes(q.toLowerCase()))))
-    .sort((a,b)=>(SEV_ORDER[a.severity]||0)-(SEV_ORDER[b.severity]||0));
-  document.getElementById("teamTbody").innerHTML=rows.map(v=>`
-    <tr onclick="openPanel(${VULN_DATA.indexOf(v)})">
-      <td><strong>${v.asset}</strong></td>
-      <td><span class="badge ${v.severity}">${v.severity}</span></td>
-      <td>${vprBadge(v)}</td>
-      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.plugin}</td>
-      <td>${cveLinkSmall(v.cve)}</td>
-      <td><span class="team-pill team-${v.team}">${v.team}</span></td>
-      <td><span class="${v.age>30?"age old":"age"}">${v.age}d</span></td>
-      <td><span class="${slaClass(v)}">${slaLabel(v)}</span></td>
-      <td>${v.state}</td>
-    </tr>`).join("");
+function renderTeamTable(){
+  const tf=document.getElementById("teamFilter").value,q=(document.getElementById("teamSearch")||{}).value||"";
+  const rows=VULN_DATA.filter(v=>(tf==="All"||v.team===tf)&&(!q||[v.asset,v.plugin,v.cve].some(s=>(s||"").toLowerCase().includes(q.toLowerCase())))).sort((a,b)=>(SEV_ORD[a.severity]||0)-(SEV_ORD[b.severity]||0));
+  document.getElementById("teamTbody").innerHTML=rows.map(v=>`<tr onclick="openPanel(${VULN_DATA.indexOf(v)})"><td><strong>${v.asset}</strong></td><td><span class="badge ${v.severity}">${v.severity}</span></td><td>${vprBadge(v)}</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.plugin}</td><td>${cveLink(v.cve)}</td><td><span class="tp ${v.team}">${v.team}</span></td><td><span class="${v.age>30?"age old":"age"}">${v.age}d</span></td><td><span class="${slaCls(v)}">${slaLabel(v)}</span></td><td>${v.state}</td></tr>`).join("");
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  EXPLOITABLE PAGE
-// ═══════════════════════════════════════════════════════════════
-function renderExploitPage() {
+// ════════════════════════════════════════════════════════
+// EXPLOIT PAGE
+// ════════════════════════════════════════════════════════
+function renderExploitPage(){
   const exp=VULN_DATA.filter(v=>v.exploited||v.kev||v.malware||v.epss>0.5);
   const kev=VULN_DATA.filter(v=>v.kev);
-  const c={Critical:0,High:0,Medium:0,Low:0};
-  exp.forEach(v=>{if(c[v.severity]!==undefined)c[v.severity]++;});
-  const avgEpss=exp.length?((exp.reduce((a,v)=>a+(v.epss||0),0)/exp.length)*100).toFixed(1):"0";
-  document.getElementById("cards-exploit").innerHTML=`
-    <div class="card c-total"><div class="lbl">Exploitable</div><div class="val">${exp.length}</div></div>
-    <div class="card c-kev"><div class="lbl">CISA KEV</div><div class="val">${kev.length}</div></div>
-    <div class="card c-crit"><div class="lbl">Critical Exploit</div><div class="val">${c.Critical}</div></div>
-    <div class="card c-high"><div class="lbl">High Exploit</div><div class="val">${c.High}</div></div>
-    <div class="card c-epss"><div class="lbl">Avg EPSS</div><div class="val">${avgEpss}%</div></div>
-    <div class="card c-exploit"><div class="lbl">Active Malware</div><div class="val">${VULN_DATA.filter(v=>v.malware).length}</div></div>
-  `;
-
-  document.getElementById("kevTbody").innerHTML=kev.length?kev.map(v=>`
-    <tr onclick="openPanel(${VULN_DATA.indexOf(v)})">
-      <td><strong>${v.asset}</strong></td><td>${v.plugin}</td>
-      <td>${cveLinkSmall(v.cve)}</td>
-      <td>${vprBadge(v)}</td>
-      <td><span class="epss-num">${v.epss?(v.epss*100).toFixed(1)+"%":"—"}</span></td>
-      <td><span class="${v.age>30?"age old":"age"}">${v.age}d</span></td>
-      <td><span class="team-pill team-${v.team}">${v.team}</span></td>
-      <td><span class="${slaClass(v)}">${slaLabel(v)}</span></td>
-    </tr>`).join(""):`<tr><td colspan="8" style="text-align:center;color:#8b949e;padding:16px">No CISA KEV findings</td></tr>`;
-
-  mkChart("exploitSevChart",{type:"doughnut",data:{labels:["Critical","High","Medium","Low"],datasets:[{data:[c.Critical,c.High,c.Medium,c.Low],backgroundColor:["#f85149","#e3b341","#d29922","#3fb950"],borderColor:"#161b22",borderWidth:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"right",labels:{color:"#8b949e",font:{size:10},padding:8}}}}});
-
-  mkChart("epssVprScatter",{type:"scatter",data:{datasets:[{label:"Exploitable",data:exp.map(v=>({x:v.vpr||0,y:(v.epss||0)*100})),backgroundColor:exp.map(v=>v.kev?"#ff7b72":v.exploited?"#f85149":"#e3b341"),pointRadius:5,pointHoverRadius:7}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:i=>`${i.raw.label||"Finding"} — VPR:${i.raw.x} EPSS:${i.raw.y.toFixed(1)}%`}}},scales:{x:{title:{display:true,text:"VPR Score",color:"#8b949e",font:{size:10}},ticks:{color:"#8b949e"},grid:{color:"#21262d"},min:0,max:10},y:{title:{display:true,text:"EPSS %",color:"#8b949e",font:{size:10}},ticks:{color:"#8b949e"},grid:{color:"#21262d"},min:0}}}});
-
+  const c={Critical:0,High:0,Medium:0,Low:0};exp.forEach(v=>{if(c[v.severity]!==undefined)c[v.severity]++;});
+  const ae=exp.length?((exp.reduce((a,v)=>a+(v.epss||0),0)/exp.length)*100).toFixed(1):"0";
+  document.getElementById("cards-exploit").innerHTML=`<div class="card c-total"><div class="lbl">Exploitable</div><div class="val">${exp.length}</div></div><div class="card c-kev"><div class="lbl">CISA KEV</div><div class="val">${kev.length}</div></div><div class="card c-crit"><div class="lbl">Critical Exploit</div><div class="val">${c.Critical}</div></div><div class="card c-high"><div class="lbl">High Exploit</div><div class="val">${c.High}</div></div><div class="card c-epss"><div class="lbl">Avg EPSS</div><div class="val">${ae}%</div></div><div class="card c-exploit"><div class="lbl">Active Malware</div><div class="val">${VULN_DATA.filter(v=>v.malware).length}</div></div>`;
+  document.getElementById("kevTbody").innerHTML=kev.length?kev.map(v=>`<tr onclick="openPanel(${VULN_DATA.indexOf(v)})"><td><strong>${v.asset}</strong></td><td>${v.plugin}</td><td>${cveLink(v.cve)}</td><td>${vprBadge(v)}</td><td><span class="epss-num">${v.epss?(v.epss*100).toFixed(1)+"%":"—"}</span></td><td><span class="${v.age>30?"age old":"age"}">${v.age}d</span></td><td><span class="tp ${v.team}">${v.team}</span></td><td><span class="${slaCls(v)}">${slaLabel(v)}</span></td></tr>`).join(""):`<tr><td colspan="8" style="text-align:center;color:#8b949e;padding:14px">No CISA KEV findings</td></tr>`;
+  mkC("exploitSevChart",{type:"doughnut",data:{labels:["Critical","High","Medium","Low"],datasets:[{data:[c.Critical,c.High,c.Medium,c.Low],backgroundColor:["#f85149","#e3b341","#d29922","#3fb950"],borderColor:"#161b22",borderWidth:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"right",labels:{color:"#8b949e",font:{size:10},padding:8}}}}});
+  mkC("epssVprScatter",{type:"scatter",data:{datasets:[{label:"Exploitable",data:exp.map(v=>({x:v.vpr||0,y:(v.epss||0)*100})),backgroundColor:exp.map(v=>v.kev?"#ff7b72":v.exploited?"#f85149":"#e3b341"),pointRadius:5,pointHoverRadius:7}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{title:{display:true,text:"VPR",color:"#8b949e",font:{size:10}},ticks:{color:"#8b949e"},grid:{color:"#21262d"},min:0,max:10},y:{title:{display:true,text:"EPSS %",color:"#8b949e",font:{size:10}},ticks:{color:"#8b949e"},grid:{color:"#21262d"},min:0}}}});
   renderExploitTable();
 }
-
-function renderExploitTable() {
+function renderExploitTable(){
   const q=(document.getElementById("exploitSearch")||{}).value||"";
-  const rows=VULN_DATA.filter(v=>(v.exploited||v.kev||v.malware||v.epss>0.5)&&(!q||[v.asset,v.plugin,v.cve].some(s=>(s||"").toLowerCase().includes(q.toLowerCase()))))
-    .sort((a,b)=>(b.vpr||0)-(a.vpr||0));
-  document.getElementById("exploitTbody").innerHTML=rows.map(v=>`
-    <tr onclick="openPanel(${VULN_DATA.indexOf(v)})">
-      <td><strong>${v.asset}</strong></td>
-      <td><span class="badge ${v.severity}">${v.severity}</span></td>
-      <td>${vprBadge(v)}</td>
-      <td><span class="epss-num">${v.epss?(v.epss*100).toFixed(1)+"%":"—"}</span></td>
-      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.plugin}</td>
-      <td>${cveLinkSmall(v.cve)}</td>
-      <td><span class="team-pill team-${v.team}">${v.team}</span></td>
-      <td>${v.kev?'<span class="pill kev">KEV</span>':""}${v.exploited?'<span class="pill exploit">Exploited</span>':""}${v.malware?'<span class="pill malware">Malware</span>':""}${v.news?'<span class="pill news">News</span>':""}</td>
-      <td><span class="${v.age>30?"age old":"age"}">${v.age}d</span></td>
-      <td><span class="${slaClass(v)}">${slaLabel(v)}</span></td>
-    </tr>`).join("");
+  const rows=VULN_DATA.filter(v=>(v.exploited||v.kev||v.malware||v.epss>0.5)&&(!q||[v.asset,v.plugin,v.cve].some(s=>(s||"").toLowerCase().includes(q.toLowerCase())))).sort((a,b)=>(b.vpr||0)-(a.vpr||0));
+  document.getElementById("exploitTbody").innerHTML=rows.map(v=>`<tr onclick="openPanel(${VULN_DATA.indexOf(v)})"><td><strong>${v.asset}</strong></td><td><span class="badge ${v.severity}">${v.severity}</span></td><td>${vprBadge(v)}</td><td><span class="epss-num">${v.epss?(v.epss*100).toFixed(1)+"%":"—"}</span></td><td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.plugin}</td><td>${cveLink(v.cve)}</td><td><span class="tp ${v.team}">${v.team}</span></td><td>${v.kev?'<span class="pill kev">KEV</span>':""}${v.exploited?'<span class="pill exploit">Exp</span>':""}${v.malware?'<span class="pill malware">Mal</span>':""}${v.news?'<span class="pill news">News</span>':""}</td><td><span class="${v.age>30?"age old":"age"}">${v.age}d</span></td><td><span class="${slaCls(v)}">${slaLabel(v)}</span></td></tr>`).join("");
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  FORECAST PAGE
-// ═══════════════════════════════════════════════════════════════
-function renderForecastPage() {
-  const open=VULN_DATA.filter(v=>v.state==="Open"||v.state==="In Progress");
+// ════════════════════════════════════════════════════════
+// FORECAST PAGE
+// ════════════════════════════════════════════════════════
+function renderForecastPage(){
+  const op=VULN_DATA.filter(v=>v.state==="Open"||v.state==="In Progress");
   const last=TREND_DATA[TREND_DATA.length-1]||{Critical:0,High:0,Medium:0,Low:0};
-  // Naive forecast: linear extrapolation from last 2 weeks if we have them
-  const prev=TREND_DATA.length>1?TREND_DATA[TREND_DATA.length-2]:{Critical:last.Critical,High:last.High,Medium:last.Medium,Low:last.Low};
-  const delta={Critical:last.Critical-prev.Critical,High:last.High-prev.High,Medium:last.Medium-prev.Medium,Low:last.Low-prev.Low};
-  const proj=Array.from({length:4},(_, i)=>({
-    week:`Wk +${i+1}`,
-    Critical:Math.max(0,Math.round(last.Critical+delta.Critical*(i+1))),
-    High:Math.max(0,Math.round(last.High+delta.High*(i+1))),
-    Medium:Math.max(0,Math.round(last.Medium+delta.Medium*(i+1))),
-    Low:Math.max(0,Math.round(last.Low+delta.Low*(i+1))),
-  }));
+  const prev=TREND_DATA.length>1?TREND_DATA[TREND_DATA.length-2]:last;
+  const d={Critical:last.Critical-prev.Critical,High:last.High-prev.High,Medium:last.Medium-prev.Medium,Low:last.Low-prev.Low};
+  const proj=Array.from({length:4},(_,i)=>({week:`Wk +${i+1}`,Critical:Math.max(0,Math.round(last.Critical+d.Critical*(i+1))),High:Math.max(0,Math.round(last.High+d.High*(i+1))),Medium:Math.max(0,Math.round(last.Medium+d.Medium*(i+1))),Low:Math.max(0,Math.round(last.Low+d.Low*(i+1)))}));
   const w4=proj[3];
-  const trendDir=s=>delta[s]<0?"fc-trend-down":"fc-trend-up";
   document.getElementById("forecastCards").innerHTML=`
-    <div class="fc fc-crit"><div class="fc-label">Projected Critical (Wk+4)</div><div class="fc-val">${w4.Critical}</div><div class="fc-sub ${trendDir("Critical")}">${delta.Critical>=0?"+":""}${delta.Critical}/wk trend</div></div>
-    <div class="fc fc-high"><div class="fc-label">Projected High (Wk+4)</div><div class="fc-val">${w4.High}</div><div class="fc-sub ${trendDir("High")}">${delta.High>=0?"+":""}${delta.High}/wk trend</div></div>
-    <div class="fc"><div class="fc-label">SLA Expiring in 14d</div><div class="fc-val" style="color:#d29922">${open.filter(v=>slaDaysLeft(v)>=0&&slaDaysLeft(v)<=14).length}</div><div class="fc-sub">need remediation soon</div></div>
-    <div class="fc"><div class="fc-label">Aging into Critical SLA</div><div class="fc-val" style="color:#e3b341">${open.filter(v=>v.severity==="Critical"&&slaDaysLeft(v)<=7&&slaDaysLeft(v)>0).length}</div><div class="fc-sub">Critical SLA within 7d</div></div>
-  `;
-
-  const allLabels=[...TREND_DATA.map(d=>d.week),...proj.map(d=>d.week)];
-  const allCrit=[...TREND_DATA.map(d=>d.Critical),...proj.map(d=>null)];
-  const projCrit=[...TREND_DATA.map(()=>null),last.Critical,...proj.map(d=>d.Critical)];
-  projCrit[TREND_DATA.length-1]=last.Critical;
-
-  mkChart("forecastChart",{type:"line",data:{labels:allLabels,datasets:[
-    {label:"Critical (Actual)",data:TREND_DATA.map(d=>d.Critical).concat(Array(4).fill(null)),borderColor:"#f85149",backgroundColor:"rgba(248,81,73,.1)",tension:.3,fill:true,pointRadius:3},
-    {label:"High (Actual)",data:TREND_DATA.map(d=>d.High).concat(Array(4).fill(null)),borderColor:"#e3b341",backgroundColor:"rgba(227,179,65,.1)",tension:.3,fill:true,pointRadius:3},
+    <div class="fc fc-crit"><div class="fc-l">Projected Critical Wk+4</div><div class="fc-v">${w4.Critical}</div><div class="fc-s ${d.Critical>=0?"trend-up":"trend-dn"}">${d.Critical>=0?"+":""}${d.Critical}/wk</div></div>
+    <div class="fc fc-high"><div class="fc-l">Projected High Wk+4</div><div class="fc-v">${w4.High}</div><div class="fc-s ${d.High>=0?"trend-up":"trend-dn"}">${d.High>=0?"+":""}${d.High}/wk</div></div>
+    <div class="fc"><div class="fc-l">SLA Expiring in 14d</div><div class="fc-v" style="color:#d29922">${op.filter(v=>slaLeft(v)>=0&&slaLeft(v)<=14).length}</div><div class="fc-s">need remediation</div></div>
+    <div class="fc"><div class="fc-l">Critical SLA &lt;7d</div><div class="fc-v" style="color:#e3b341">${op.filter(v=>v.severity==="Critical"&&slaLeft(v)<=7&&slaLeft(v)>0).length}</div><div class="fc-s">urgent</div></div>`;
+  mkC("forecastChart",{type:"line",data:{labels:[...TREND_DATA.map(d=>d.week),...proj.map(d=>d.week)],datasets:[
+    {label:"Critical (Actual)",data:[...TREND_DATA.map(d=>d.Critical),...Array(4).fill(null)],borderColor:"#f85149",backgroundColor:"rgba(248,81,73,.1)",tension:.3,fill:true,pointRadius:3},
+    {label:"High (Actual)",data:[...TREND_DATA.map(d=>d.High),...Array(4).fill(null)],borderColor:"#e3b341",backgroundColor:"rgba(227,179,65,.1)",tension:.3,fill:true,pointRadius:3},
     {label:"Critical (Forecast)",data:[...Array(TREND_DATA.length-1).fill(null),last.Critical,...proj.map(d=>d.Critical)],borderColor:"#f85149",borderDash:[5,5],tension:.3,pointRadius:3,fill:false},
     {label:"High (Forecast)",data:[...Array(TREND_DATA.length-1).fill(null),last.High,...proj.map(d=>d.High)],borderColor:"#e3b341",borderDash:[5,5],tension:.3,pointRadius:3,fill:false},
   ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#8b949e",font:{size:10}}}},scales:{x:{ticks:{color:"#8b949e"},grid:{color:"#21262d"}},y:{ticks:{color:"#8b949e"},grid:{color:"#21262d"},beginAtZero:true}}}});
-
-  // Aging bins
-  const bins=[0,0,0,0,0];
-  open.forEach(v=>{if(v.age<30)bins[0]++;else if(v.age<60)bins[1]++;else if(v.age<90)bins[2]++;else if(v.age<120)bins[3]++;else bins[4]++;});
-  mkChart("agingChart",{type:"bar",data:{labels:["0–30d","30–60d","60–90d","90–120d",">120d"],datasets:[{label:"Open Findings",data:bins,backgroundColor:["#3fb950","#d29922","#e3b341","#f85149","#b91c1c"],borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#8b949e"},grid:{color:"#21262d"}},y:{ticks:{color:"#8b949e"},grid:{color:"#21262d"},beginAtZero:true}}}});
-
-  // SLA expiry list
-  const expiring=open.filter(v=>slaDaysLeft(v)>=0&&slaDaysLeft(v)<=30).sort((a,b)=>slaDaysLeft(a)-slaDaysLeft(b));
-  document.getElementById("expiryList").innerHTML=expiring.length?expiring.map(v=>`
-    <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #21262d">
-      <span class="badge ${v.severity}">${v.severity}</span>
-      <span style="flex:1;font-size:12px">${v.asset} — ${v.plugin.slice(0,40)}</span>
-      <span class="team-pill team-${v.team}">${v.team}</span>
-      <span style="font-size:11px;color:#d29922;font-weight:700">${slaDaysLeft(v)}d left</span>
-    </div>`).join(""):`<div style="color:#8b949e;font-size:12px;padding:12px 0">No SLAs expiring in the next 30 days.</div>`;
+  const bins=[0,0,0,0,0];op.forEach(v=>{if(v.age<30)bins[0]++;else if(v.age<60)bins[1]++;else if(v.age<90)bins[2]++;else if(v.age<120)bins[3]++;else bins[4]++;});
+  mkC("agingChart",{type:"bar",data:{labels:["0–30d","30–60d","60–90d","90–120d",">120d"],datasets:[{data:bins,backgroundColor:["#3fb950","#d29922","#e3b341","#f85149","#b91c1c"],borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#8b949e"},grid:{color:"#21262d"}},y:{ticks:{color:"#8b949e"},grid:{color:"#21262d"},beginAtZero:true}}}});
+  const exp=op.filter(v=>slaLeft(v)>=0&&slaLeft(v)<=30).sort((a,b)=>slaLeft(a)-slaLeft(b));
+  document.getElementById("expiryList").innerHTML=exp.length?exp.map(v=>`<div style="display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:1px solid #21262d"><span class="badge ${v.severity}">${v.severity}</span><span style="flex:1;font-size:11px">${v.asset} — ${v.plugin.slice(0,38)}</span><span class="tp ${v.team}">${v.team}</span><span style="font-size:11px;color:#d29922;font-weight:700">${slaLeft(v)}d</span></div>`).join(""):`<div style="color:#8b949e;font-size:12px;padding:10px 0">No SLAs expiring in 30 days.</div>`;
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  MAIN FINDINGS TABLE
-// ═══════════════════════════════════════════════════════════════
-function buildTabs(){
-  const regions=["All",...new Set(VULN_DATA.map(v=>v.region).sort())];
-  document.getElementById("tabRow").innerHTML=regions.map(r=>`<div class="tab ${r===activeRegion?"active":""}" onclick="setRegion('${r}')">${r}</div>`).join("");
-}
-function setRegion(r){ activeRegion=r; buildTabs(); renderTable(); }
-
+// ════════════════════════════════════════════════════════
+// ALL FINDINGS TABLE
+// ════════════════════════════════════════════════════════
+function buildTabs(){const regions=["All",...new Set(VULN_DATA.map(v=>v.region).sort())];document.getElementById("tabRow").innerHTML=regions.map(r=>`<div class="tab ${r===activeRegion?"active":""}" onclick="setRegion('${r}')">${r}</div>`).join("");}
+function setRegion(r){activeRegion=r;buildTabs();renderTable();}
 function filteredMain(){
   const q=document.getElementById("search").value.toLowerCase();
   return VULN_DATA.filter(v=>(activeRegion==="All"||v.region===activeRegion)&&(!q||[v.asset,v.plugin,v.cve,v.severity,v.state,v.team,v.os||""].some(s=>s.toLowerCase().includes(q))))
-    .sort((a,b)=>{
-      if(sortCol==="severity")return(SEV_ORDER[a.severity]-SEV_ORDER[b.severity])*sortDir;
-      if(["vpr","epss","cvss3","age"].includes(sortCol))return((a[sortCol]||0)-(b[sortCol]||0))*sortDir;
-      return String(a[sortCol]||"").localeCompare(String(b[sortCol]||""))*sortDir;
-    });
+    .sort((a,b)=>{if(sortCol==="severity")return(SEV_ORD[a.severity]-SEV_ORD[b.severity])*sortDir;if(["vpr","epss","cvss3","age"].includes(sortCol))return((a[sortCol]||0)-(b[sortCol]||0))*sortDir;return String(a[sortCol]||"").localeCompare(String(b[sortCol]||""))*sortDir;});
 }
-
 function renderTable(){
   buildTabs();
   const rows=filteredMain();
   document.getElementById("rowCount").textContent=`(${rows.length})`;
-  document.getElementById("tbody").innerHTML=rows.map(v=>`
-    <tr onclick="openPanel(${VULN_DATA.indexOf(v)})">
-      <td><div style="font-weight:600">${v.asset}</div>${v.ip?`<div style="font-size:10px;color:#8b949e">${v.ip}</div>`:""}</td>
-      <td><span class="badge ${v.severity}">${v.severity}</span></td>
-      <td>${vprBadge(v)}</td>
-      <td><span class="epss-num">${v.epss?(v.epss*100).toFixed(1)+"%":"—"}</span></td>
-      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${v.plugin}">${v.plugin}</td>
-      <td>${cveLinkSmall(v.cve)}</td>
-      <td><span class="team-pill team-${v.team}">${v.team}</span></td>
-      <td><span class="${v.age>30?"age old":"age"}">${v.age}d</span></td>
-      <td><span class="${slaClass(v)}">${slaLabel(v)}</span></td>
-      <td style="white-space:nowrap">${v.kev?'<span class="pill kev">KEV</span>':""}${v.exploited?'<span class="pill exploit">Exp</span>':""}${v.malware?'<span class="pill malware">Mal</span>':""}${v.news?'<span class="pill news">News</span>':""}</td>
-      <td>${v.state}</td>
-    </tr>`).join("");
+  document.getElementById("tbody").innerHTML=rows.map(v=>`<tr onclick="openPanel(${VULN_DATA.indexOf(v)})"><td><div style="font-weight:600">${v.asset}</div>${v.ip?`<div style="font-size:10px;color:#8b949e">${v.ip}</div>`:""}</td><td><span class="badge ${v.severity}">${v.severity}</span></td><td>${vprBadge(v)}</td><td><span class="epss-num">${v.epss?(v.epss*100).toFixed(1)+"%":"—"}</span></td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${v.plugin}">${v.plugin}</td><td>${cveLink(v.cve)}</td><td><span class="tp ${v.team}">${v.team}</span></td><td><span class="${v.age>30?"age old":"age"}">${v.age}d</span></td><td><span class="${slaCls(v)}">${slaLabel(v)}</span></td><td style="white-space:nowrap">${v.kev?'<span class="pill kev">KEV</span>':""}${v.exploited?'<span class="pill exploit">Exp</span>':""}${v.malware?'<span class="pill malware">Mal</span>':""}${v.news?'<span class="pill news">News</span>':""}</td><td>${v.state}</td></tr>`).join("");
 }
+document.querySelectorAll("th.s").forEach(th=>th.addEventListener("click",()=>{const col=th.dataset.col;sortDir=col===sortCol?sortDir*-1:1;sortCol=col;renderTable();}));
+document.getElementById("search").addEventListener("input",renderTable);
 
-// ═══════════════════════════════════════════════════════════════
-//  LEADERSHIP REPORT
-// ═══════════════════════════════════════════════════════════════
-function renderLeadership() {
+// ════════════════════════════════════════════════════════
+// LEADERSHIP
+// ════════════════════════════════════════════════════════
+function renderLeadership(){
   document.getElementById("ldrDate").textContent=new Date().toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
-  const src=VULN_DATA;
-  const open=src.filter(v=>v.state!=="Remediated"&&v.state!=="Exception");
-  const c={Critical:0,High:0,Medium:0,Low:0};
-  open.forEach(v=>{if(c[v.severity]!==undefined)c[v.severity]++;});
-  const total=open.length, breaches=open.filter(v=>slaStatus(v)==="breach").length;
-  const remediatedPct=src.length?Math.round((src.filter(v=>v.state==="Remediated").length/src.length)*100):0;
-  const avgVpr=open.filter(v=>v.vpr>0).length?((open.filter(v=>v.vpr>0).reduce((a,v)=>a+v.vpr,0)/open.filter(v=>v.vpr>0).length)).toFixed(1):"—";
-  const last=TREND_DATA[TREND_DATA.length-1]||{Critical:0,High:0};
-  const prev=TREND_DATA.length>1?TREND_DATA[TREND_DATA.length-2]:last;
-  const critDelta=last.Critical-prev.Critical;
-
-  document.getElementById("ldrKpis").innerHTML=`
-    <div class="ldr-kpi"><div class="lk-val" style="color:#58a6ff">${total}</div><div class="lk-lbl">Total Open Findings</div></div>
-    <div class="ldr-kpi"><div class="lk-val" style="color:#f85149">${breaches}</div><div class="lk-lbl">SLA Breaches</div><div class="lk-delta" style="color:#8b949e">${pct(breaches,total)}% of open</div></div>
-    <div class="ldr-kpi"><div class="lk-val" style="color:${critDelta<=0?"#3fb950":"#f85149"}">${critDelta>=0?"+":""}${critDelta}</div><div class="lk-lbl">Critical WoW Change</div><div class="lk-delta" style="color:#8b949e">vs prior week</div></div>
-    <div class="ldr-kpi"><div class="lk-val" style="color:#3fb950">${remediatedPct}%</div><div class="lk-lbl">Remediation Rate</div><div class="lk-delta" style="color:#8b949e">of all time findings</div></div>
-  `;
-
-  // Risk bar
+  const src=VULN_DATA,op=src.filter(v=>v.state!=="Remediated"&&v.state!=="Exception");
+  const c={Critical:0,High:0,Medium:0,Low:0};op.forEach(v=>{if(c[v.severity]!==undefined)c[v.severity]++;});
+  const tot=op.length,br=op.filter(v=>slaSt(v)==="breach").length;
+  const remPct=src.length?Math.round((src.filter(v=>v.state==="Remediated").length/src.length)*100):0;
+  const last=TREND_DATA[TREND_DATA.length-1]||{Critical:0},prev=TREND_DATA.length>1?TREND_DATA[TREND_DATA.length-2]:last;
+  const cd=last.Critical-prev.Critical;
+  document.getElementById("ldrKpis").innerHTML=`<div class="ldr-kpi"><div class="lk-v" style="color:#58a6ff">${tot}</div><div class="lk-l">Total Open</div></div><div class="ldr-kpi"><div class="lk-v" style="color:#f85149">${br}</div><div class="lk-l">SLA Breaches</div><div class="lk-d">${pct(br,tot)}% of open</div></div><div class="ldr-kpi"><div class="lk-v" style="color:${cd<=0?"#3fb950":"#f85149"}">${cd>=0?"+":""}${cd}</div><div class="lk-l">Critical WoW</div><div class="lk-d">vs prior week</div></div><div class="ldr-kpi"><div class="lk-v" style="color:#3fb950">${remPct}%</div><div class="lk-l">Remediation Rate</div></div>`;
   const rt=c.Critical+c.High+c.Medium+c.Low||1;
-  document.getElementById("riskBar").innerHTML=`
-    <div style="width:${pct(c.Critical,rt)}%;background:#f85149;color:#fff">${c.Critical?c.Critical:""}</div>
-    <div style="width:${pct(c.High,rt)}%;background:#e3b341;color:#0d1117">${c.High?c.High:""}</div>
-    <div style="width:${pct(c.Medium,rt)}%;background:#d29922;color:#0d1117">${c.Medium?c.Medium:""}</div>
-    <div style="width:${pct(c.Low,rt)}%;background:#3fb950;color:#0d1117">${c.Low?c.Low:""}</div>
-  `;
-
-  // Team table
+  document.getElementById("riskBar").innerHTML=`<div style="width:${pct(c.Critical,rt)}%;background:#f85149;color:#fff">${c.Critical||""}</div><div style="width:${pct(c.High,rt)}%;background:#e3b341;color:#0d1117">${c.High||""}</div><div style="width:${pct(c.Medium,rt)}%;background:#d29922;color:#0d1117">${c.Medium||""}</div><div style="width:${pct(c.Low,rt)}%;background:#3fb950;color:#0d1117">${c.Low||""}</div>`;
   const teams=["Endpoint","Server","Network","Application"];
   document.getElementById("ldrTeamTbody").innerHTML=teams.map(t=>{
     const tv=VULN_DATA.filter(v=>v.team===t&&v.state!=="Remediated");
     const tc={Critical:0,High:0};tv.forEach(v=>{if(tc[v.severity]!==undefined)tc[v.severity]++;});
-    const tb=tv.filter(v=>slaStatus(v)==="breach").length;
-    const tavg=tv.filter(v=>v.vpr>0).length?((tv.filter(v=>v.vpr>0).reduce((a,v)=>a+v.vpr,0)/tv.filter(v=>v.vpr>0).length)).toFixed(1):"—";
-    const tkev=tv.filter(v=>v.kev).length;
-    return `<tr><td><span class="team-pill team-${t}">${TEAM_ICONS[t]||""} ${t}</span></td><td>${tv.length}</td><td style="color:#f85149">${tc.Critical}</td><td style="color:#e3b341">${tc.High}</td><td style="color:${tb>0?"#f85149":"#3fb950"}">${tb}</td><td>${tv.length?pct(tb,tv.length)+"%" :"—"}</td><td>${tavg}</td><td style="color:${tkev>0?"#ff7b72":"#8b949e"}">${tkev}</td></tr>`;
+    const tb=tv.filter(v=>slaSt(v)==="breach").length,tavg=tv.filter(v=>v.vpr>0).length?((tv.filter(v=>v.vpr>0).reduce((a,v)=>a+v.vpr,0)/tv.filter(v=>v.vpr>0).length)).toFixed(1):"—",tk=tv.filter(v=>v.kev).length;
+    return`<tr><td><span class="tp ${t}">${TICONS[t]||""} ${t}</span></td><td>${tv.length}</td><td style="color:#f85149">${tc.Critical}</td><td style="color:#e3b341">${tc.High}</td><td style="color:${tb>0?"#f85149":"#3fb950"}">${tb}</td><td>${tv.length?pct(tb,tv.length)+"%":"—"}</td><td>${tavg}</td><td style="color:${tk>0?"#ff7b72":"#8b949e"}">${tk}</td></tr>`;
   }).join("");
-
-  // Top 5
   const top5=VULN_DATA.filter(v=>v.state!=="Remediated").sort((a,b)=>(b.vpr||0)-(a.vpr||0)).slice(0,5);
-  document.getElementById("ldrTop5Tbody").innerHTML=top5.map(v=>`
-    <tr onclick="openPanel(${VULN_DATA.indexOf(v)})" style="cursor:pointer">
-      <td><strong>${v.asset}</strong></td><td>${v.plugin}</td><td>${cveLinkSmall(v.cve)}</td>
-      <td><span class="vpr-num" style="color:${VPR_COLOR(v.vpr||0)};font-weight:700">${v.vpr?v.vpr.toFixed(1):"—"}</span></td>
-      <td><span class="epss-num">${v.epss?(v.epss*100).toFixed(1)+"%":"—"}</span></td>
-      <td><span class="team-pill team-${v.team}">${v.team}</span></td>
-      <td>${v.age}d</td>
-      <td><span class="${slaClass(v)}">${slaLabel(v)}</span></td>
-      <td>${v.kev?'<span class="pill kev">KEV</span>':""}${v.exploited?'<span class="pill exploit">Exp</span>':""}${v.malware?'<span class="pill malware">Mal</span>':""}</td>
-    </tr>`).join("");
-
-  // Actions
-  const kevCount=VULN_DATA.filter(v=>v.kev&&v.state!=="Remediated").length;
-  const slaBreachCount=VULN_DATA.filter(v=>slaStatus(v)==="breach").length;
-  const critCount=VULN_DATA.filter(v=>v.severity==="Critical"&&v.state==="Open").length;
-  const actions=[];
-  if(kevCount>0)actions.push({t:`Remediate ${kevCount} CISA KEV finding(s) immediately`,d:"CISA KEV vulnerabilities are actively exploited in the wild. All KEV items should be treated as Priority 1 regardless of internal SLA."});
-  if(slaBreachCount>0)actions.push({t:`Address ${slaBreachCount} SLA breach(es) across teams`,d:"Findings past SLA represent compliance risk. Escalate to team leads for remediation plans or documented exceptions."});
-  if(critCount>0)actions.push({t:`${critCount} Critical finding(s) require immediate owner assignment`,d:"All Critical vulnerabilities should have a named owner and remediation plan within 48 hours of detection."});
-  actions.push({t:"Review Forecast for next 4 weeks",d:"The Forecast tab shows projected vulnerability counts based on current trend. Use this to resource-plan remediation sprints."});
-  document.getElementById("ldrActions").innerHTML=actions.map((a,i)=>`
-    <div class="action-item">
-      <div class="ai-num">${i+1}</div>
-      <div class="ai-text"><strong>${a.t}</strong><br><span>${a.d}</span></div>
-    </div>`).join("");
-
+  document.getElementById("ldrTop5Tbody").innerHTML=top5.map(v=>`<tr onclick="openPanel(${VULN_DATA.indexOf(v)})" style="cursor:pointer"><td><strong>${v.asset}</strong></td><td>${v.plugin}</td><td>${cveLink(v.cve)}</td><td><span class="vpr-num" style="color:${VCLR(v.vpr||0)};font-weight:700">${v.vpr?v.vpr.toFixed(1):"—"}</span></td><td><span class="epss-num">${v.epss?(v.epss*100).toFixed(1)+"%":"—"}</span></td><td><span class="tp ${v.team}">${v.team}</span></td><td>${v.age}d</td><td><span class="${slaCls(v)}">${slaLabel(v)}</span></td><td>${v.kev?'<span class="pill kev">KEV</span>':""}${v.exploited?'<span class="pill exploit">Exp</span>':""}${v.malware?'<span class="pill malware">Mal</span>':""}</td></tr>`).join("");
+  const kvC=VULN_DATA.filter(v=>v.kev&&v.state!=="Remediated").length,slbC=VULN_DATA.filter(v=>slaSt(v)==="breach").length,crC=VULN_DATA.filter(v=>v.severity==="Critical"&&v.state==="Open").length;
+  const acts=[];
+  if(kvC>0)acts.push({t:`Remediate ${kvC} CISA KEV finding(s) immediately`,d:"CISA KEV vulnerabilities are actively exploited. Treat as Priority 1 regardless of internal SLA."});
+  if(slbC>0)acts.push({t:`Address ${slbC} SLA breach(es)`,d:"Escalate to team leads for remediation plans or documented exceptions."});
+  if(crC>0)acts.push({t:`Assign owners to ${crC} Critical finding(s)`,d:"All Critical findings need a named owner and remediation plan within 48 hours."});
+  acts.push({t:"Review Forecast tab for next 4-week projection",d:"Use forecast data to resource-plan remediation sprints."});
+  document.getElementById("ldrActions").innerHTML=acts.map((a,i)=>`<div class="action-item"><div class="ai-num">${i+1}</div><div class="ai-text"><strong>${a.t}</strong><br><span>${a.d}</span></div></div>`).join("");
   renderTrend();
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  DETAIL PANEL
-// ═══════════════════════════════════════════════════════════════
-function openPanel(idx) {
-  const v=VULN_DATA[idx];
-  const vprColor=VPR_COLOR(v.vpr||0);
+// ════════════════════════════════════════════════════════
+// DETAIL PANEL
+// ════════════════════════════════════════════════════════
+function openPanel(idx){
+  const v=VULN_DATA[idx],vc=VCLR(v.vpr||0);
   const cves=v.cve&&v.cve!=="N/A"?v.cve.split(/[,;]+/).map(c=>c.trim()).filter(Boolean):[];
-  let html=`
-    <h3>${v.plugin}</h3>
-    <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-      <span class="badge ${v.severity}">${v.severity}</span>
-      <span class="team-pill team-${v.team}">${TEAM_ICONS[v.team]||""} ${v.team}</span>
-      ${v.kev?'<span class="pill kev">CISA KEV</span>':""}
-      ${v.exploited?'<span class="pill exploit">Actively Exploited</span>':""}
-      ${v.malware?'<span class="pill malware">Malware</span>':""}
-      ${v.news?'<span class="pill news">In the News</span>':""}
-    </div>
-
-    <div class="sec-title">Asset Details</div>
-    <div class="dg">
-      <div class="di"><div class="dil">Asset</div><div class="div2">${v.asset}</div></div>
-      <div class="di"><div class="dil">IP Address</div><div class="div2">${v.ip||"—"}</div></div>
-      <div class="di"><div class="dil">OS</div><div class="div2">${v.os||"—"}</div></div>
-      <div class="di"><div class="dil">Region</div><div class="div2">${v.region}</div></div>
-      <div class="di"><div class="dil">Team</div><div class="div2">${v.team}</div></div>
-      <div class="di"><div class="dil">State</div><div class="div2">${v.state}</div></div>
-      <div class="di"><div class="dil">Age</div><div class="div2">${v.age} days</div></div>
-      <div class="di"><div class="dil">SLA Limit</div><div class="div2">${slaLimit(v)} days (${v.severity})</div></div>
-      <div class="di"><div class="dil">SLA Status</div><div class="div2"><span class="${slaClass(v)}">${slaLabel(v)}</span></div></div>
-      ${v.port?`<div class="di"><div class="dil">Port/Protocol</div><div class="div2">${v.port}/${v.protocol||"?"}</div></div>`:""}
-      ${v.first_seen?`<div class="di"><div class="dil">First Seen</div><div class="div2">${v.first_seen}</div></div>`:""}
-      ${v.last_seen?`<div class="di"><div class="dil">Last Seen</div><div class="div2">${v.last_seen}</div></div>`:""}
-    </div>
-
-    <div class="sec-title">Risk Scores</div>
-    <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap">
-      <div>
-        <div style="font-size:10px;color:#8b949e;margin-bottom:4px">VPR Score</div>
-        <div style="font-size:38px;font-weight:800;color:${vprColor}">${v.vpr?v.vpr.toFixed(1):"N/A"}</div>
-        <div style="font-size:10px;color:#8b949e">/ 10.0</div>
-      </div>
-      <div style="font-size:12px;color:#8b949e;line-height:2">
-        ${v.epss?`<div>EPSS: <strong style="color:#c084fc">${(v.epss*100).toFixed(2)}%</strong> exploit probability</div>`:""}
-        ${v.cvss3?`<div>CVSSv3: <strong style="color:#e6edf3">${v.cvss3}</strong></div>`:""}
-        ${v.cvss2?`<div>CVSSv2: <strong style="color:#e6edf3">${v.cvss2}</strong></div>`:""}
-        ${v.exploit_ease?`<div>Exploitability: ${v.exploit_ease}</div>`:""}
-        ${v.threat_int?`<div>Threat Intensity: ${v.threat_int}</div>`:""}
-        ${v.patch?`<div>Patch Published: ${v.patch}</div>`:""}
-      </div>
-    </div>
-
-    <div class="sec-title">Synopsis</div>
-    <div class="sol-box">${v.synopsis||"No synopsis available."}</div>
-
-    <div class="sec-title">Remediation</div>
-    <div class="sol-box green">${v.solution||"No remediation data available."}</div>
-  `;
-
+  let html=`<h3>${v.plugin}</h3><div style="margin-top:5px;display:flex;gap:5px;flex-wrap:wrap;align-items:center"><span class="badge ${v.severity}">${v.severity}</span><span class="tp ${v.team}">${TICONS[v.team]||""} ${v.team}</span>${v.kev?'<span class="pill kev">CISA KEV</span>':""}${v.exploited?'<span class="pill exploit">Actively Exploited</span>':""}${v.malware?'<span class="pill malware">Malware</span>':""}${v.news?'<span class="pill news">In the News</span>':""}</div>
+  <div class="sec-t">Asset</div><div class="dg">
+    <div class="di"><div class="dil">Asset</div><div class="div2">${v.asset}</div></div>
+    <div class="di"><div class="dil">IP</div><div class="div2">${v.ip||"—"}</div></div>
+    <div class="di"><div class="dil">OS</div><div class="div2">${v.os||"—"}</div></div>
+    <div class="di"><div class="dil">Region / Team</div><div class="div2">${v.region} / ${v.team}</div></div>
+    <div class="di"><div class="dil">Age</div><div class="div2">${v.age} days</div></div>
+    <div class="di"><div class="dil">SLA Limit</div><div class="div2">${slaLim(v)}d (${v.severity})</div></div>
+    <div class="di"><div class="dil">SLA Status</div><div class="div2"><span class="${slaCls(v)}">${slaLabel(v)}</span></div></div>
+    <div class="di"><div class="dil">State</div><div class="div2">${v.state}</div></div>
+    ${v.port?`<div class="di"><div class="dil">Port/Protocol</div><div class="div2">${v.port}/${v.protocol||"?"}</div></div>`:""}
+  </div>
+  <div class="sec-t">Risk Scores</div>
+  <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start">
+    <div><div style="font-size:10px;color:#8b949e;margin-bottom:3px">VPR Score</div><div style="font-size:36px;font-weight:800;color:${vc}">${v.vpr?v.vpr.toFixed(1):"N/A"}</div><div style="font-size:10px;color:#8b949e">/ 10.0</div></div>
+    <div style="font-size:12px;color:#8b949e;line-height:2">${v.epss?`<div>EPSS: <strong style="color:#c084fc">${(v.epss*100).toFixed(2)}%</strong></div>`:""}${v.cvss3?`<div>CVSSv3: <strong style="color:#e6edf3">${v.cvss3}</strong></div>`:""}${v.exploit_ease?`<div>Exploitability: ${v.exploit_ease}</div>`:""}</div>
+  </div>
+  <div class="sec-t">Synopsis</div><div class="sol-box">${v.synopsis||"No synopsis available."}</div>
+  <div class="sec-t">Remediation</div><div class="sol-box green">${v.solution||"No remediation data."}</div>`;
   if(cves.length){
-    html+=`<div class="sec-title">CVE References</div>`;
-    cves.forEach(c=>{html+=`<div class="cve-block">
-      <div class="cve-id">${c}</div>
-      <div class="cve-links">
-        <a href="https://nvd.nist.gov/vuln/detail/${c}" target="_blank">🔗 NVD</a>
-        <a href="https://www.cve.org/CVERecord?id=${c}" target="_blank">🔗 CVE.org</a>
-        <a href="https://www.tenable.com/cve/${c}" target="_blank">🔗 Tenable</a>
-        <a href="https://www.exploit-db.com/search?cve=${c}" target="_blank">🔗 Exploit-DB</a>
-        <a href="https://cisa.gov/known-exploited-vulnerabilities-catalog" target="_blank">🔗 CISA KEV</a>
-        <a href="https://attack.mitre.org/" target="_blank">🔗 MITRE ATT&CK</a>
-      </div>
-    </div>`;});
+    html+=`<div class="sec-t">CVE References</div>`;
+    cves.forEach(c=>{html+=`<div class="cve-block"><div class="cve-id">${c}</div><div class="cve-links"><a href="https://nvd.nist.gov/vuln/detail/${c}" target="_blank">🔗 NVD</a><a href="https://www.cve.org/CVERecord?id=${c}" target="_blank">🔗 CVE.org</a><a href="https://www.tenable.com/cve/${c}" target="_blank">🔗 Tenable</a><a href="https://www.exploit-db.com/search?cve=${c}" target="_blank">🔗 Exploit-DB</a><a href="https://cisa.gov/known-exploited-vulnerabilities-catalog" target="_blank">🔗 CISA KEV</a><a href="https://attack.mitre.org/" target="_blank">🔗 MITRE ATT&CK</a></div></div>`;});
   }
-
-  if(v.refs&&v.refs.length){
-    html+=`<div class="sec-title">Plugin See Also</div><ul class="ref-ul">`;
-    v.refs.forEach(r=>{html+=`<li>🔗 <a href="${r}" target="_blank">${r}</a></li>`;});
-    html+="</ul>";
-  }
-
-  if(v.pluginId){
-    html+=`<div class="sec-title">Plugin Info</div>
-    <div class="cve-block">
-      <div class="cve-links">
-        <a href="https://www.tenable.com/plugins/nessus/${v.pluginId}" target="_blank">🔗 Tenable Plugin ${v.pluginId}</a>
-        ${v.family?`<span style="color:#8b949e;font-size:11px;padding:3px 9px">Family: ${v.family}</span>`:""}
-      </div>
-    </div>`;
-  }
-
+  if(v.refs&&v.refs.length){html+=`<div class="sec-t">Plugin References</div><ul class="ref-ul">`;v.refs.forEach(r=>{html+=`<li>🔗 <a href="${r}" target="_blank">${r}</a></li>`;});html+="</ul>";}
+  if(v.pluginId){html+=`<div class="sec-t">Plugin</div><div class="cve-block"><div class="cve-links"><a href="https://www.tenable.com/plugins/nessus/${v.pluginId}" target="_blank">🔗 Plugin ${v.pluginId}</a>${v.family?`<span style="color:#8b949e;font-size:11px;padding:3px 8px">${v.family}</span>`:""}</div></div>`;}
   document.getElementById("panelContent").innerHTML=html;
   document.getElementById("panelBg").classList.add("open");
 }
-function closePanel(){ document.getElementById("panelBg").classList.remove("open"); }
+function closePanel(){document.getElementById("panelBg").classList.remove("open");}
 
-// ═══════════════════════════════════════════════════════════════
-//  EXPORTS
-// ═══════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════
+// TEAMS NOTIFICATION
+// ════════════════════════════════════════════════════════
+function openTeamsModal(){
+  const team=document.getElementById("teamFilter")?.value||"All";
+  const br=VULN_DATA.filter(v=>(team==="All"||v.team===team)&&slaSt(v)==="breach").length;
+  const kv=VULN_DATA.filter(v=>(team==="All"||v.team===team)&&v.kev).length;
+  const top=VULN_DATA.filter(v=>(team==="All"||v.team===team)&&v.state!=="Remediated").sort((a,b)=>(b.vpr||0)-(a.vpr||0)).slice(0,3);
+  document.getElementById("teams_team").value=team;
+  document.getElementById("teams_msg").value=`🛡 Vulnerability Dashboard Alert — ${new Date().toLocaleDateString()}\n\nTeam: ${team}\nSLA Breaches: ${br}\nCISA KEV Items: ${kv}\n\nTop Findings:\n${top.map((v,i)=>`${i+1}. ${v.asset} — ${v.plugin} (VPR ${v.vpr?v.vpr.toFixed(1):"N/A"}, ${v.severity})`).join("\n")}\n\nPlease review and remediate assigned findings. Reply to confirm receipt.`;
+  document.getElementById("teamsModal").classList.add("open");
+}
+
+async function sendTeamsNotification(){
+  const webhook=document.getElementById("teams_webhook").value.trim();
+  const msg=document.getElementById("teams_msg").value.trim();
+  const status=document.getElementById("teamsStatus");
+  if(!webhook){status.textContent="⚠ Please enter your Teams Incoming Webhook URL first.";status.style.color="#d29922";return;}
+  if(!webhook.includes("webhook")||!webhook.includes("office.com")){status.textContent="⚠ That doesn't look like a valid Teams Incoming Webhook URL.";status.style.color="#d29922";return;}
+  status.textContent="Sending…";status.style.color="#8b949e";
+  try{
+    await fetch(webhook,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:msg})});
+    status.textContent="✅ Notification sent successfully!";status.style.color="#3fb950";
+    setTimeout(()=>document.getElementById("teamsModal").classList.remove("open"),2000);
+  } catch(e){
+    status.innerHTML=`⚠ Could not send directly (CORS). <strong>Copy the message</strong> and paste into Teams manually, or set up a Power Automate flow to receive from this dashboard.<br><br><button onclick="navigator.clipboard.writeText(document.getElementById('teams_msg').value);this.textContent='✅ Copied!'" style="background:#1f6feb;border:none;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer">📋 Copy Message</button>`;
+    status.style.color="#d29922";
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// EXPORTS
+// ════════════════════════════════════════════════════════
 function exportCSV(){
   const src=activeRegion==="All"?VULN_DATA:VULN_DATA.filter(v=>v.region===activeRegion);
   const h=["Asset","IP","OS","Region","Team","Severity","Plugin","CVE","VPR","EPSS","CVSSv3","Age_Days","State","SLA_Status","KEV","Exploited","Malware","In_News","Solution"];
-  const rows=src.map(v=>[v.asset,v.ip||"",v.os||"",v.region,v.team,v.severity,q(v.plugin),v.cve,v.vpr||"",v.epss||"",v.cvss3||"",v.age,v.state,slaLabel(v),v.kev?"Yes":"",v.exploited?"Yes":"",v.malware?"Yes":"",v.news?"Yes":"",q(v.solution||"")]);
-  dlCsv([h,...rows],`vuln-${new Date().toISOString().slice(0,10)}.csv`);
+  const rows=src.map(v=>[v.asset,v.ip||"",v.os||"",v.region,v.team,v.severity,qq(v.plugin),v.cve,v.vpr||"",v.epss||"",v.cvss3||"",v.age,v.state,slaLabel(v),v.kev?"Yes":"",v.exploited?"Yes":"",v.malware?"Yes":"",v.news?"Yes":"",qq(v.solution||"")]);
+  dlCSV([h,...rows],`vuln-${new Date().toISOString().slice(0,10)}.csv`);
 }
 
-// Power BI optimized export — clean column names, no specials, PBI-friendly types
 function exportPBI(){
   const h=["Asset_Name","IP_Address","Operating_System","Region","Team","Severity","Severity_Order","Plugin_Name","CVE_ID","VPR_Score","EPSS_Score","CVSS3_Score","Age_Days","SLA_Limit_Days","Days_Until_SLA","SLA_Status","State","KEV","Actively_Exploited","Malware","In_The_News","Solution","First_Seen","Last_Seen","Port","Protocol","Plugin_ID","Plugin_Family","Report_Date"];
   const today=new Date().toISOString().slice(0,10);
-  const rows=VULN_DATA.map(v=>[
-    v.asset, v.ip||"", v.os||"", v.region, v.team, v.severity, SEV_ORDER[v.severity]??4,
-    v.plugin, v.cve||"N/A",
-    v.vpr||0, v.epss||0, v.cvss3||0,
-    v.age, slaLimit(v), slaDaysLeft(v),
-    slaStatus(v)==="breach"?"Breached":slaStatus(v)==="warning"?"Warning":"Within SLA",
-    v.state,
-    v.kev?"Yes":"No", v.exploited?"Yes":"No", v.malware?"Yes":"No", v.news?"Yes":"No",
-    q(v.solution||""), v.first_seen||"", v.last_seen||"",
-    v.port||"", v.protocol||"", v.pluginId||"", v.family||"", today
-  ]);
-  dlCsv([h,...rows],`vuln-powerbi-${today}.csv`);
-  alert("✅ Power BI CSV exported!\n\nTo import:\n1. Open Power BI Desktop\n2. Home → Get Data → Text/CSV\n3. Select the downloaded file\n4. Click Load\n5. All columns are pre-typed for Power BI (numbers as numbers, dates as dates)");
+  const rows=VULN_DATA.map(v=>[v.asset,v.ip||"",v.os||"",v.region,v.team,v.severity,SEV_ORD[v.severity]??4,v.plugin,v.cve||"N/A",v.vpr||0,v.epss||0,v.cvss3||0,v.age,slaLim(v),slaLeft(v),slaSt(v)==="breach"?"Breached":slaSt(v)==="warning"?"Warning":"Within SLA",v.state,v.kev?"Yes":"No",v.exploited?"Yes":"No",v.malware?"Yes":"No",v.news?"Yes":"No",qq(v.solution||""),v.first_seen||"",v.last_seen||"",v.port||"",v.protocol||"",v.pluginId||"",v.family||"",today]);
+  dlCSV([h,...rows],`vuln-powerbi-${today}.csv`);
+  alert("✅ Power BI CSV exported!\n\nTo import into Power BI:\n1. Open Power BI Desktop\n2. Home → Get Data → Text/CSV\n3. Select this file → Load\n\nAll columns are pre-typed:\n• VPR/EPSS/CVSSv3/Age = Numbers\n• SLA_Status = Text filter\n• Severity_Order = Sort column (0=Critical)\n• Report_Date = Date column\n\nTip: Pin to OneDrive for auto-refresh.");
+}
+
+// ════════════════════════════════════════════════════════
+// EXCEL EXPORT (uses SheetJS)
+// ════════════════════════════════════════════════════════
+function exportExcel(){
+  if(typeof XLSX==="undefined"){alert("Excel library not loaded. Check your internet connection.");return;}
+  const wb=XLSX.utils.book_new();
+  const today=new Date().toISOString().slice(0,10);
+
+  // Sheet 1: All Findings
+  const fh=["Asset","IP","OS","Region","Team","Severity","Plugin","CVE","VPR","EPSS","CVSSv3","Age_Days","SLA_Limit","Days_Until_SLA","SLA_Status","State","KEV","Exploited","Malware","In_News","Synopsis","Solution","Report_Date"];
+  const fd=VULN_DATA.map(v=>[v.asset,v.ip||"",v.os||"",v.region,v.team,v.severity,v.plugin,v.cve||"N/A",v.vpr||0,v.epss||0,v.cvss3||0,v.age,slaLim(v),slaLeft(v),slaSt(v)==="breach"?"Breached":slaSt(v)==="warning"?"Warning":"Within SLA",v.state,v.kev?"Yes":"No",v.exploited?"Yes":"No",v.malware?"Yes":"No",v.news?"Yes":"No",v.synopsis||"",v.solution||"",today]);
+  const ws1=XLSX.utils.aoa_to_sheet([fh,...fd]);
+  // Column widths
+  ws1["!cols"]=[{wch:20},{wch:14},{wch:18},{wch:8},{wch:12},{wch:10},{wch:40},{wch:18},{wch:7},{wch:7},{wch:8},{wch:8},{wch:10},{wch:12},{wch:14},{wch:12},{wch:5},{wch:9},{wch:8},{wch:8},{wch:50},{wch:60},{wch:12}];
+  styleExcelHeader(ws1,fh.length);
+  XLSX.utils.book_append_sheet(wb,ws1,"All Findings");
+
+  // Sheet 2: SLA Summary
+  const sh=["Asset","Region","Team","Severity","Plugin","CVE","Age_Days","SLA_Limit","Days_Left","SLA_Status","State"];
+  const sd=VULN_DATA.map(v=>[v.asset,v.region,v.team,v.severity,v.plugin,v.cve||"N/A",v.age,slaLim(v),slaLeft(v),slaSt(v)==="breach"?"Breached":slaSt(v)==="warning"?"Warning":"Within SLA",v.state]);
+  const ws2=XLSX.utils.aoa_to_sheet([sh,...sd]);
+  ws2["!cols"]=[{wch:20},{wch:8},{wch:12},{wch:10},{wch:40},{wch:18},{wch:8},{wch:10},{wch:10},{wch:14},{wch:12}];
+  styleExcelHeader(ws2,sh.length);
+  XLSX.utils.book_append_sheet(wb,ws2,"SLA Tracker");
+
+  // Sheet 3: Team Summary
+  const teams=["Endpoint","Server","Network","Application"];
+  const th2=["Team","Total_Open","Critical","High","Medium","Low","SLA_Breached","Breach_Rate_Pct","Avg_VPR","KEV_Count"];
+  const td2=teams.map(t=>{
+    const tv=VULN_DATA.filter(v=>v.team===t&&v.state!=="Remediated");
+    const c={Critical:0,High:0,Medium:0,Low:0};tv.forEach(v=>{if(c[v.severity]!==undefined)c[v.severity]++;});
+    const tb=tv.filter(v=>slaSt(v)==="breach").length;
+    const tavg=tv.filter(v=>v.vpr>0).length?parseFloat(((tv.filter(v=>v.vpr>0).reduce((a,v)=>a+v.vpr,0)/tv.filter(v=>v.vpr>0).length)).toFixed(1)):0;
+    return[t,tv.length,c.Critical,c.High,c.Medium,c.Low,tb,tv.length?pct(tb,tv.length):0,tavg,tv.filter(v=>v.kev).length];
+  });
+  const ws3=XLSX.utils.aoa_to_sheet([th2,...td2]);
+  ws3["!cols"]=[{wch:14},{wch:12},{wch:10},{wch:8},{wch:10},{wch:8},{wch:14},{wch:16},{wch:10},{wch:10}];
+  styleExcelHeader(ws3,th2.length);
+  XLSX.utils.book_append_sheet(wb,ws3,"Team Summary");
+
+  // Sheet 4: Exploitable
+  const eh=["Asset","Team","Severity","VPR","EPSS","Plugin","CVE","KEV","Exploited","Malware","Age_Days","SLA_Status","Solution"];
+  const ed=VULN_DATA.filter(v=>v.exploited||v.kev||v.malware||v.epss>0.5).sort((a,b)=>(b.vpr||0)-(a.vpr||0)).map(v=>[v.asset,v.team,v.severity,v.vpr||0,v.epss||0,v.plugin,v.cve||"N/A",v.kev?"Yes":"No",v.exploited?"Yes":"No",v.malware?"Yes":"No",v.age,slaLabel(v),v.solution||""]);
+  const ws4=XLSX.utils.aoa_to_sheet([eh,...ed]);
+  ws4["!cols"]=[{wch:20},{wch:12},{wch:10},{wch:7},{wch:7},{wch:40},{wch:18},{wch:5},{wch:9},{wch:8},{wch:8},{wch:14},{wch:60}];
+  styleExcelHeader(ws4,eh.length);
+  XLSX.utils.book_append_sheet(wb,ws4,"Exploitable");
+
+  // Sheet 5: Leadership KPIs
+  const src=VULN_DATA,op=src.filter(v=>v.state!=="Remediated"&&v.state!=="Exception");
+  const lkh=["Metric","Value","Notes"];
+  const c2={Critical:0,High:0,Medium:0,Low:0};op.forEach(v=>{if(c2[v.severity]!==undefined)c2[v.severity]++;});
+  const lkd=[
+    ["Report Date",today,""],
+    ["Total Open Findings",op.length,""],
+    ["Critical",c2.Critical,"Severity: Critical"],
+    ["High",c2.High,"Severity: High"],
+    ["Medium",c2.Medium,"Severity: Medium"],
+    ["Low",c2.Low,"Severity: Low"],
+    ["SLA Breached",op.filter(v=>slaSt(v)==="breach").length,"Past SLA limit"],
+    ["CISA KEV",VULN_DATA.filter(v=>v.kev&&v.state!=="Remediated").length,"Known exploited"],
+    ["Actively Exploited",VULN_DATA.filter(v=>v.exploited&&v.state!=="Remediated").length,""],
+    ["Remediation Rate %",src.length?Math.round((src.filter(v=>v.state==="Remediated").length/src.length)*100):0,"Of all time findings"],
+  ];
+  const ws5=XLSX.utils.aoa_to_sheet([lkh,...lkd]);
+  ws5["!cols"]=[{wch:24},{wch:14},{wch:30}];
+  styleExcelHeader(ws5,lkh.length);
+  XLSX.utils.book_append_sheet(wb,ws5,"Leadership KPIs");
+
+  XLSX.writeFile(wb,`VulnDashboard-${today}.xlsx`);
+}
+
+function styleExcelHeader(ws,colCount){
+  // Bold the header row — basic cell styling hint for SheetJS community edition
+  for(let c=0;c<colCount;c++){
+    const addr=XLSX.utils.encode_cell({r:0,c});
+    if(!ws[addr])continue;
+    ws[addr].s={font:{bold:true},fill:{fgColor:{rgb:"1F2937"}}};
+  }
 }
 
 function exportSlaCSV(){
-  const h=["Asset","Region","Team","Severity","Plugin","CVE","Age_Days","SLA_Limit_Days","Days_Left","SLA_Status","State"];
-  const rows=VULN_DATA.map(v=>[v.asset,v.region,v.team,v.severity,q(v.plugin),v.cve,v.age,slaLimit(v),slaDaysLeft(v),slaStatus(v),v.state]);
-  dlCsv([h,...rows],`sla-export-${new Date().toISOString().slice(0,10)}.csv`);
+  const h=["Asset","Region","Team","Severity","Plugin","CVE","Age_Days","SLA_Limit","Days_Left","SLA_Status","State"];
+  const rows=VULN_DATA.map(v=>[v.asset,v.region,v.team,v.severity,qq(v.plugin),v.cve,v.age,slaLim(v),slaLeft(v),slaSt(v),v.state]);
+  dlCSV([h,...rows],`sla-${new Date().toISOString().slice(0,10)}.csv`);
 }
-
 function exportExploitCSV(){
   const src=VULN_DATA.filter(v=>v.exploited||v.kev||v.malware||v.epss>0.5);
-  const h=["Asset","Team","Severity","VPR","EPSS","Plugin","CVE","KEV","Exploited","Malware","Age_Days","SLA_Status"];
-  const rows=src.map(v=>[v.asset,v.team,v.severity,v.vpr||0,v.epss||0,q(v.plugin),v.cve,v.kev?"Yes":"No",v.exploited?"Yes":"No",v.malware?"Yes":"No",v.age,slaLabel(v)]);
-  dlCsv([h,...rows],`exploitable-${new Date().toISOString().slice(0,10)}.csv`);
+  const h=["Asset","Team","Severity","VPR","EPSS","Plugin","CVE","KEV","Exploited","Malware","Age_Days","SLA"];
+  const rows=src.map(v=>[v.asset,v.team,v.severity,v.vpr||0,v.epss||0,qq(v.plugin),v.cve,v.kev?"Yes":"",v.exploited?"Yes":"",v.malware?"Yes":"",v.age,slaLabel(v)]);
+  dlCSV([h,...rows],`exploitable-${new Date().toISOString().slice(0,10)}.csv`);
 }
-
 function exportLeadershipCSV(){
   const teams=["Endpoint","Server","Network","Application"];
-  const h=["Team","Total_Open","Critical","High","Medium","Low","SLA_Breached","Breach_Rate_Pct","Avg_VPR","KEV_Count"];
-  const rows=teams.map(t=>{
-    const tv=VULN_DATA.filter(v=>v.team===t&&v.state!=="Remediated");
-    const c={Critical:0,High:0,Medium:0,Low:0};tv.forEach(v=>{if(c[v.severity]!==undefined)c[v.severity]++;});
-    const tb=tv.filter(v=>slaStatus(v)==="breach").length;
-    const tavg=tv.filter(v=>v.vpr>0).length?((tv.filter(v=>v.vpr>0).reduce((a,v)=>a+v.vpr,0)/tv.filter(v=>v.vpr>0).length)).toFixed(1):0;
-    return[t,tv.length,c.Critical,c.High,c.Medium,c.Low,tb,tv.length?pct(tb,tv.length):0,tavg,tv.filter(v=>v.kev).length];
-  });
-  dlCsv([h,...rows],`leadership-report-${new Date().toISOString().slice(0,10)}.csv`);
+  const h=["Team","Total_Open","Critical","High","Medium","Low","SLA_Breached","Breach_Rate","Avg_VPR","KEV"];
+  const rows=teams.map(t=>{const tv=VULN_DATA.filter(v=>v.team===t&&v.state!=="Remediated");const c={Critical:0,High:0,Medium:0,Low:0};tv.forEach(v=>{if(c[v.severity]!==undefined)c[v.severity]++;});const tb=tv.filter(v=>slaSt(v)==="breach").length;return[t,tv.length,c.Critical,c.High,c.Medium,c.Low,tb,tv.length?pct(tb,tv.length)+"%":"—",(tv.filter(v=>v.vpr>0).length?((tv.filter(v=>v.vpr>0).reduce((a,v)=>a+v.vpr,0)/tv.filter(v=>v.vpr>0).length)).toFixed(1):0),tv.filter(v=>v.kev).length];});
+  dlCSV([h,...rows],`leadership-${new Date().toISOString().slice(0,10)}.csv`);
 }
+function dlCSV(rows,filename){const csv=rows.map(r=>r.join(",")).join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download=filename;a.click();}
+const qq=s=>`"${String(s).replace(/"/g,'""')}"`;
+const pct=(a,b)=>b?Math.round(a/b*100):0;
 
-function dlCsv(rowsWithHeader, filename){
-  const csv=rowsWithHeader.map(r=>r.join(",")).join("\n");
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
-  a.download=filename; a.click();
-}
-function q(s){ return `"${String(s).replace(/"/g,'""')}"`; }
-function pct(a,b){ return b?Math.round(a/b*100):0; }
+// ════════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════════
+function vprBadge(v){const col=VCLR(v.vpr||0),p=Math.min(100,(v.vpr||0)*10);return`<div class="vpr-wrap"><div class="vpr-bar"><div class="vpr-fill" style="width:${p}%;background:${col}"></div></div><span class="vpr-num" style="color:${col}">${v.vpr?v.vpr.toFixed(1):"—"}</span></div>`;}
+function cveLink(cve){if(!cve||cve==="N/A")return`<span style="color:#8b949e;font-size:10px">N/A</span>`;return cve.split(/[,;]+/).map(c=>c.trim()).filter(Boolean).map(c=>`<a class="cve-link" href="https://nvd.nist.gov/vuln/detail/${c}" target="_blank">${c}</a>`).join("<br>");}
 
-// ═══════════════════════════════════════════════════════════════
-//  HELPERS
-// ═══════════════════════════════════════════════════════════════
-function vprBadge(v){
-  const col=VPR_COLOR(v.vpr||0), pct2=Math.min(100,(v.vpr||0)*10);
-  return `<div class="vpr-wrap"><div class="vpr-bar"><div class="vpr-fill" style="width:${pct2}%;background:${col}"></div></div><span class="vpr-num" style="color:${col}">${v.vpr?v.vpr.toFixed(1):"—"}</span></div>`;
-}
-function cveLinkSmall(cve){
-  if(!cve||cve==="N/A") return `<span style="color:#8b949e;font-size:10px">N/A</span>`;
-  return cve.split(/[,;]+/).map(c=>c.trim()).filter(Boolean).map(c=>`<a class="cve-link" href="https://nvd.nist.gov/vuln/detail/${c}" target="_blank">${c}</a>`).join("<br>");
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  ADD ROW
-// ═══════════════════════════════════════════════════════════════
-function toggleAddRow(){const f=document.getElementById("addRowForm");f.style.display=f.style.display==="block"?"none":"block";}
-function addRow(){
-  const asset=document.getElementById("f_asset").value.trim();
-  if(!asset)return alert("Asset required.");
-  const plugin=document.getElementById("f_plugin").value.trim()||"Unknown";
-  VULN_DATA.unshift({asset,ip:"",os:"",region:document.getElementById("f_region").value,team:document.getElementById("f_team").value,severity:document.getElementById("f_severity").value,plugin,pluginId:"",cve:document.getElementById("f_cve").value.trim()||"N/A",vpr:parseFloat(document.getElementById("f_vpr").value)||0,epss:parseFloat(document.getElementById("f_epss").value)||0,cvss3:0,cvss2:0,age:parseInt(document.getElementById("f_age").value)||0,state:document.getElementById("f_state").value,solution:"",synopsis:"",refs:[],exploited:false,malware:false,news:false,kev:false,family:"",patch:"",exploit_ease:"",threat_int:"",sla_date:"",first_seen:"",last_seen:"",port:"",protocol:""});
-  document.getElementById("addRowForm").style.display="none";
-  ["f_asset","f_plugin","f_cve","f_vpr","f_epss","f_age"].forEach(id=>document.getElementById(id).value="");
-  refreshAll();
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  SORT + SEARCH
-// ═══════════════════════════════════════════════════════════════
-document.querySelectorAll("th.sortable").forEach(th=>{
-  th.addEventListener("click",()=>{const col=th.dataset.col;sortDir=col===sortCol?sortDir*-1:1;sortCol=col;renderTable();});
-});
-document.getElementById("search").addEventListener("input",renderTable);
-
-// ═══════════════════════════════════════════════════════════════
-//  TREND MODAL
-// ═══════════════════════════════════════════════════════════════
+// TREND MODAL
 function openTrendModal(){document.getElementById("trendModal").classList.add("open");}
 function closeTrendModal(){document.getElementById("trendModal").classList.remove("open");}
-function addTrendWeek(){
-  const label=document.getElementById("tw_label").value.trim();if(!label)return;
-  TREND_DATA.push({week:label,Critical:+document.getElementById("tw_crit").value||0,High:+document.getElementById("tw_high").value||0,Medium:+document.getElementById("tw_med").value||0,Low:+document.getElementById("tw_low").value||0});
-  closeTrendModal();renderTrend();
-}
+function addTrendWeek(){const l=document.getElementById("tw_label").value.trim();if(!l)return;TREND_DATA.push({week:l,Critical:+document.getElementById("tw_crit").value||0,High:+document.getElementById("tw_high").value||0,Medium:+document.getElementById("tw_med").value||0,Low:+document.getElementById("tw_low").value||0});closeTrendModal();renderTrend();}
 
-// ═══════════════════════════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════════════════════════
-function refreshAll(){ renderOverview(); }
-document.getElementById("lastUpdated").textContent=new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+// ADD ROW
+function toggleAddRow(){const f=document.getElementById("addRowForm");f.style.display=f.style.display==="block"?"none":"block";}
+function addRow(){const asset=document.getElementById("f_asset").value.trim();if(!asset)return alert("Asset required.");const plugin=document.getElementById("f_plugin").value.trim()||"Unknown";VULN_DATA.unshift({asset,ip:"",os:"",region:document.getElementById("f_region").value,team:document.getElementById("f_team").value,severity:document.getElementById("f_severity").value,plugin,pluginId:"",cve:document.getElementById("f_cve").value.trim()||"N/A",vpr:parseFloat(document.getElementById("f_vpr").value)||0,epss:parseFloat(document.getElementById("f_epss").value)||0,cvss3:0,age:parseInt(document.getElementById("f_age").value)||0,state:document.getElementById("f_state").value,solution:"",synopsis:"",refs:[],exploited:false,malware:false,news:false,kev:false,family:"",patch:"",exploit_ease:"",first_seen:"",last_seen:"",port:"",protocol:""});document.getElementById("addRowForm").style.display="none";["f_asset","f_plugin","f_cve","f_vpr","f_epss","f_age"].forEach(id=>document.getElementById(id).value="");refreshAll();}
+
+// INIT
+function refreshAll(){renderOverview();}
 refreshAll();
 </script>
 </body>
