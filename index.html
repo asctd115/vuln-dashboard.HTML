@@ -8,35 +8,49 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: #0d1117; color: #e6edf3; font-family: 'Segoe UI', sans-serif; padding: 24px; }
-  h1 { font-size: 20px; font-weight: 600; margin-bottom: 6px; color: #58a6ff; }
+
+  h1 { font-size: 22px; font-weight: 700; color: #58a6ff; margin-bottom: 4px; }
   .subtitle { font-size: 13px; color: #8b949e; margin-bottom: 24px; }
-  code { background: #161b22; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
 
-  .cards { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
-  .card { flex: 1; min-width: 140px; background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 18px 20px; }
-  .card .label { font-size: 12px; color: #8b949e; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
-  .card .value { font-size: 32px; font-weight: 700; }
+  /* Import Bar */
+  .import-bar { background: #161b22; border: 2px dashed #30363d; border-radius: 12px; padding: 20px 24px; margin-bottom: 28px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; transition: border-color .2s; }
+  .import-bar:hover { border-color: #58a6ff; }
+  .import-bar .icon { font-size: 28px; }
+  .import-bar .text h3 { font-size: 14px; font-weight: 600; color: #e6edf3; }
+  .import-bar .text p { font-size: 12px; color: #8b949e; margin-top: 3px; }
+  .import-bar input[type=file] { display: none; }
+  .import-bar label { background: #1f6feb; border: none; color: #fff; padding: 8px 18px; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s; }
+  .import-bar label:hover { background: #388bfd; }
+  #importStatus { font-size: 12px; color: #3fb950; font-weight: 600; margin-left: auto; }
+
+  /* Cards */
+  .cards { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 28px; }
+  .card { flex: 1; min-width: 130px; background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 16px 18px; }
+  .card .label { font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+  .card .value { font-size: 30px; font-weight: 700; }
   .card.critical .value { color: #f85149; }
-  .card.high .value { color: #e3b341; }
-  .card.medium .value { color: #d29922; }
-  .card.low .value { color: #3fb950; }
-  .card.total .value { color: #58a6ff; }
+  .card.high .value    { color: #e3b341; }
+  .card.medium .value  { color: #d29922; }
+  .card.low .value     { color: #3fb950; }
+  .card.total .value   { color: #58a6ff; }
   .card.breached .value { color: #f85149; }
+  .card.epss .value    { color: #c084fc; }
+  .card .sub { font-size: 11px; color: #8b949e; margin-top: 4px; }
 
-  /* Chart row */
-  .chart-row { display: grid; grid-template-columns: 1fr 340px; gap: 16px; margin-bottom: 28px; }
-  @media(max-width:800px){ .chart-row { grid-template-columns: 1fr; } }
+  /* Charts */
+  .chart-row { display: grid; grid-template-columns: 1fr 1fr 320px; gap: 16px; margin-bottom: 28px; }
+  @media(max-width:900px){ .chart-row { grid-template-columns: 1fr; } }
   .chart-wrap { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 20px; }
-  .chart-wrap h2 { font-size: 14px; font-weight: 600; margin-bottom: 14px; color: #e6edf3; }
-  .chart-inner { position: relative; height: 220px; }
-  .donut-inner { position: relative; height: 220px; display: flex; align-items: center; justify-content: center; }
+  .chart-wrap h2 { font-size: 13px; font-weight: 600; color: #8b949e; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 14px; }
+  .chart-inner { position: relative; height: 200px; }
+  .donut-inner { position: relative; height: 200px; display: flex; align-items: center; justify-content: center; }
   .donut-center { position: absolute; text-align: center; pointer-events: none; }
-  .donut-center .big { font-size: 28px; font-weight: 700; color: #e6edf3; }
+  .donut-center .big { font-size: 26px; font-weight: 700; color: #e6edf3; }
   .donut-center .small { font-size: 11px; color: #8b949e; margin-top: 2px; }
 
-  /* Region tabs */
+  /* Tabs */
   .tab-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-  .tab { padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid #30363d; background: #161b22; color: #8b949e; transition: all .15s; }
+  .tab { padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid #30363d; background: #161b22; color: #8b949e; transition: all .15s; }
   .tab:hover { border-color: #58a6ff; color: #58a6ff; }
   .tab.active { background: #1f6feb; border-color: #1f6feb; color: #fff; }
 
@@ -45,76 +59,133 @@
   .table-header { padding: 14px 20px; border-bottom: 1px solid #30363d; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
   .table-header span { font-size: 14px; font-weight: 600; }
   .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  input#search { background: #0d1117; border: 1px solid #30363d; color: #e6edf3; padding: 6px 12px; border-radius: 6px; font-size: 13px; width: 200px; }
+  input#search { background: #0d1117; border: 1px solid #30363d; color: #e6edf3; padding: 6px 12px; border-radius: 6px; font-size: 13px; width: 210px; }
   input#search:focus { outline: none; border-color: #58a6ff; }
   button { background: #21262d; border: 1px solid #30363d; color: #e6edf3; padding: 6px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; transition: background .15s; }
   button:hover { background: #30363d; }
   button.primary { background: #1f6feb; border-color: #1f6feb; color: #fff; }
   button.primary:hover { background: #388bfd; }
 
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { text-align: left; padding: 10px 16px; color: #8b949e; font-weight: 500; border-bottom: 1px solid #21262d; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+  .table-outer { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 1100px; }
+  th { text-align: left; padding: 9px 12px; color: #8b949e; font-weight: 500; border-bottom: 1px solid #21262d; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
   th.sortable { cursor: pointer; user-select: none; }
   th.sortable:hover { color: #e6edf3; }
-  td { padding: 7px 12px; border-bottom: 1px solid #21262d; vertical-align: middle; }
+  td { padding: 8px 12px; border-bottom: 1px solid #21262d; vertical-align: middle; }
   tr:last-child td { border-bottom: none; }
-  tr:hover td { background: #1c2128; }
-  tr.editing td { background: #1c2128; }
+  tr:hover td { background: #1c2128; cursor: pointer; }
 
-  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
-  .badge.Critical { background: rgba(248,81,73,.15); color: #f85149; border: 1px solid rgba(248,81,73,.3); }
-  .badge.High     { background: rgba(227,179,65,.15); color: #e3b341; border: 1px solid rgba(227,179,65,.3); }
-  .badge.Medium   { background: rgba(210,153,34,.15); color: #d29922; border: 1px solid rgba(210,153,34,.3); }
-  .badge.Low      { background: rgba(63,185,80,.15);  color: #3fb950; border: 1px solid rgba(63,185,80,.3); }
-  .badge.Info     { background: rgba(88,166,255,.15); color: #58a6ff; border: 1px solid rgba(88,166,255,.3); }
+  /* Badges */
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+  .badge.Critical { background: rgba(248,81,73,.15);  color: #f85149; border: 1px solid rgba(248,81,73,.35); }
+  .badge.High     { background: rgba(227,179,65,.15); color: #e3b341; border: 1px solid rgba(227,179,65,.35); }
+  .badge.Medium   { background: rgba(210,153,34,.15); color: #d29922; border: 1px solid rgba(210,153,34,.35); }
+  .badge.Low      { background: rgba(63,185,80,.15);  color: #3fb950; border: 1px solid rgba(63,185,80,.35); }
+  .badge.Info     { background: rgba(88,166,255,.15); color: #58a6ff; border: 1px solid rgba(88,166,255,.35); }
 
-  .sla-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
-  .sla-badge.ok      { background: rgba(63,185,80,.15);  color: #3fb950; border: 1px solid rgba(63,185,80,.3); }
-  .sla-badge.warning { background: rgba(210,153,34,.15); color: #d29922; border: 1px solid rgba(210,153,34,.3); }
-  .sla-badge.breach  { background: rgba(248,81,73,.15);  color: #f85149; border: 1px solid rgba(248,81,73,.3); }
+  .sla-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+  .sla-badge.ok      { background: rgba(63,185,80,.12);  color: #3fb950; border: 1px solid rgba(63,185,80,.3); }
+  .sla-badge.warning { background: rgba(210,153,34,.12); color: #d29922; border: 1px solid rgba(210,153,34,.3); }
+  .sla-badge.breach  { background: rgba(248,81,73,.12);  color: #f85149; border: 1px solid rgba(248,81,73,.3); }
 
-  .age { font-size: 12px; color: #8b949e; }
-  .age.old { color: #f85149; }
+  /* VPR bar */
+  .vpr-wrap { display: flex; align-items: center; gap: 6px; }
+  .vpr-bar { width: 60px; height: 6px; background: #21262d; border-radius: 3px; overflow: hidden; flex-shrink: 0; }
+  .vpr-fill { height: 100%; border-radius: 3px; transition: width .3s; }
+  .vpr-num { font-size: 11px; font-weight: 700; white-space: nowrap; }
 
-  td input, td select { background: #0d1117; border: 1px solid #388bfd; color: #e6edf3; padding: 4px 8px; border-radius: 5px; font-size: 12px; width: 100%; }
+  /* EPSS */
+  .epss-num { font-size: 11px; color: #c084fc; font-weight: 600; }
 
+  /* CVE link */
+  .cve-link { color: #58a6ff; text-decoration: none; font-size: 11px; }
+  .cve-link:hover { text-decoration: underline; }
+
+  /* Plugin link */
+  .plugin-cell { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Exploit indicators */
+  .pill { display: inline-block; padding: 1px 7px; border-radius: 8px; font-size: 10px; font-weight: 600; margin-right: 3px; white-space: nowrap; }
+  .pill.exploit { background: rgba(248,81,73,.15); color: #f85149; border: 1px solid rgba(248,81,73,.25); }
+  .pill.malware  { background: rgba(192,132,252,.15); color: #c084fc; border: 1px solid rgba(192,132,252,.25); }
+  .pill.news     { background: rgba(88,166,255,.15); color: #58a6ff; border: 1px solid rgba(88,166,255,.25); }
+  .pill.kev      { background: rgba(248,81,73,.25); color: #ff7b72; border: 1px solid rgba(248,81,73,.5); }
+
+  /* Detail Panel */
+  .panel-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 200; }
+  .panel-bg.open { display: block; }
+  .panel { position: fixed; top: 0; right: 0; width: 480px; max-width: 95vw; height: 100vh; background: #161b22; border-left: 1px solid #30363d; overflow-y: auto; padding: 28px 24px; z-index: 201; }
+  .panel h3 { font-size: 16px; font-weight: 700; color: #e6edf3; margin-bottom: 4px; }
+  .panel .close-btn { position: absolute; top: 20px; right: 20px; background: none; border: none; color: #8b949e; font-size: 20px; cursor: pointer; padding: 4px; }
+  .panel .close-btn:hover { color: #e6edf3; }
+  .section-title { font-size: 11px; font-weight: 600; color: #8b949e; text-transform: uppercase; letter-spacing: .06em; margin: 20px 0 10px; border-bottom: 1px solid #21262d; padding-bottom: 6px; }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .detail-item .di-label { font-size: 11px; color: #8b949e; margin-bottom: 3px; }
+  .detail-item .di-value { font-size: 13px; color: #e6edf3; word-break: break-word; }
+  .solution-box { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 14px; font-size: 12px; color: #e6edf3; line-height: 1.6; margin-top: 8px; }
+  .ref-list { list-style: none; margin-top: 8px; }
+  .ref-list li { margin-bottom: 6px; }
+  .ref-list a { color: #58a6ff; font-size: 12px; text-decoration: none; word-break: break-all; }
+  .ref-list a:hover { text-decoration: underline; }
+  .vpr-big { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+  .vpr-big .score { font-size: 36px; font-weight: 800; }
+  .vpr-big .drivers { font-size: 12px; color: #8b949e; line-height: 1.8; }
+
+  /* Add row form */
   #addRowForm { display: none; padding: 16px 20px; border-top: 1px solid #30363d; background: #1c2128; }
   #addRowForm h3 { font-size: 13px; font-weight: 600; margin-bottom: 12px; color: #58a6ff; }
-  .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 12px; }
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: 10px; margin-bottom: 12px; }
   .form-grid label { font-size: 11px; color: #8b949e; display: block; margin-bottom: 4px; }
   .form-grid input, .form-grid select { background: #0d1117; border: 1px solid #30363d; color: #e6edf3; padding: 6px 10px; border-radius: 6px; font-size: 13px; width: 100%; }
   .form-actions { display: flex; gap: 8px; }
 
-  /* SLA thresholds by severity (days) */
-  /* Critical=7, High=30, Medium=60, Low=90 */
-
-  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 100; align-items: center; justify-content: center; }
+  /* Trend modal */
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 300; align-items: center; justify-content: center; }
   .modal-bg.open { display: flex; }
   .modal { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 24px; width: 370px; }
   .modal h3 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
   .modal label { font-size: 12px; color: #8b949e; display: block; margin-bottom: 4px; margin-top: 10px; }
   .modal input { background: #0d1117; border: 1px solid #30363d; color: #e6edf3; padding: 7px 10px; border-radius: 6px; font-size: 13px; width: 100%; }
   .modal-actions { display: flex; gap: 8px; margin-top: 18px; }
+
+  /* Empty state */
+  .empty-state { text-align: center; padding: 48px 20px; color: #8b949e; }
+  .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
 </style>
 </head>
 <body>
 
-<h1>Vulnerability Dashboard</h1>
-<p class="subtitle">Last updated: <span id="lastUpdated"></span> &nbsp;|&nbsp; Click row to edit &nbsp;·&nbsp; Double-click to delete</p>
+<h1>🛡 Vulnerability Dashboard</h1>
+<p class="subtitle">Last updated: <span id="lastUpdated"></span> &nbsp;·&nbsp; Click any row for full details &nbsp;·&nbsp; Import real Tenable data below</p>
+
+<!-- Import Bar -->
+<div class="import-bar" id="dropZone">
+  <div class="icon">📂</div>
+  <div class="text">
+    <h3>Import Tenable CSV Export</h3>
+    <p>Export from Tenable → Explore → Findings → Export as CSV &nbsp;·&nbsp; Drag & drop or click to browse</p>
+  </div>
+  <label for="csvFile">Choose CSV File</label>
+  <input type="file" id="csvFile" accept=".csv">
+  <span id="importStatus"></span>
+</div>
 
 <!-- Cards -->
 <div class="cards" id="cards"></div>
 
-<!-- Charts row -->
+<!-- Charts -->
 <div class="chart-row">
   <div class="chart-wrap">
-    <div style="display:flex;align-items:center;justify-content:space-between;">
-      <h2>Week-over-Week Trend</h2>
-      <button onclick="openTrendModal()">+ Add Week</button>
+    <h2>Week-over-Week Trend</h2>
+    <div style="display:flex;justify-content:flex-end;margin-top:-28px;margin-bottom:8px">
+      <button onclick="openTrendModal()" style="font-size:11px;padding:4px 10px">+ Add Week</button>
     </div>
-    <div class="chart-inner" style="margin-top:14px">
-      <canvas id="trendChart"></canvas>
-    </div>
+    <div class="chart-inner"><canvas id="trendChart"></canvas></div>
+  </div>
+  <div class="chart-wrap">
+    <h2>VPR Score Distribution</h2>
+    <div class="chart-inner"><canvas id="vprChart"></canvas></div>
   </div>
   <div class="chart-wrap">
     <h2>Severity Breakdown</h2>
@@ -122,21 +193,21 @@
       <canvas id="donutChart"></canvas>
       <div class="donut-center">
         <div class="big" id="donutTotal">0</div>
-        <div class="small">Total Open</div>
+        <div class="small">Open</div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Region tabs -->
+<!-- Region Tabs -->
 <div class="tab-row" id="tabRow"></div>
 
 <!-- Table -->
 <div class="table-wrap">
   <div class="table-header">
-    <span>Findings</span>
+    <span>Findings <span id="rowCount" style="font-size:12px;color:#8b949e;font-weight:400;margin-left:6px"></span></span>
     <div class="toolbar">
-      <input id="search" type="text" placeholder="Search asset, plugin, CVE…">
+      <input id="search" type="text" placeholder="Search asset, CVE, plugin…">
       <button onclick="toggleAddRow()">+ Add Row</button>
       <button class="primary" onclick="exportCSV()">⬇ Export CSV</button>
     </div>
@@ -146,18 +217,14 @@
     <h3>New Finding</h3>
     <div class="form-grid">
       <div><label>Asset</label><input id="f_asset" placeholder="LAPTOP-US-001"></div>
-      <div><label>Region</label>
-        <select id="f_region"><option>US</option><option>UK</option><option>AU</option><option>DE</option><option>Other</option></select>
-      </div>
-      <div><label>Severity</label>
-        <select id="f_severity"><option>Critical</option><option>High</option><option>Medium</option><option>Low</option><option>Info</option></select>
-      </div>
+      <div><label>Region</label><select id="f_region"><option>US</option><option>UK</option><option>AU</option><option>DE</option><option>Other</option></select></div>
+      <div><label>Severity</label><select id="f_severity"><option>Critical</option><option>High</option><option>Medium</option><option>Low</option><option>Info</option></select></div>
       <div><label>Plugin / Vulnerability</label><input id="f_plugin" placeholder="Log4Shell RCE"></div>
       <div><label>CVE</label><input id="f_cve" placeholder="CVE-2021-44228"></div>
+      <div><label>VPR Score</label><input id="f_vpr" type="number" step="0.1" min="0" max="10" placeholder="7.4"></div>
+      <div><label>EPSS Score</label><input id="f_epss" type="number" step="0.01" min="0" max="1" placeholder="0.42"></div>
       <div><label>Age (days)</label><input id="f_age" type="number" placeholder="0"></div>
-      <div><label>State</label>
-        <select id="f_state"><option>Open</option><option>Remediated</option><option>Exception</option><option>In Progress</option></select>
-      </div>
+      <div><label>State</label><select id="f_state"><option>Open</option><option>Remediated</option><option>Exception</option><option>In Progress</option></select></div>
     </div>
     <div class="form-actions">
       <button class="primary" onclick="addRow()">Add Finding</button>
@@ -165,28 +232,46 @@
     </div>
   </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th class="sortable" data-col="asset">Asset</th>
-        <th class="sortable" data-col="region">Region</th>
-        <th class="sortable" data-col="severity">Severity</th>
-        <th class="sortable" data-col="plugin">Plugin / Vulnerability</th>
-        <th class="sortable" data-col="cve">CVE</th>
-        <th class="sortable" data-col="age">Age</th>
-        <th class="sortable" data-col="state">State</th>
-        <th>SLA</th>
-      </tr>
-    </thead>
-    <tbody id="tbody"></tbody>
-  </table>
+  <div class="table-outer">
+    <table>
+      <thead>
+        <tr>
+          <th class="sortable" data-col="asset">Asset / Host</th>
+          <th class="sortable" data-col="os">OS</th>
+          <th class="sortable" data-col="severity">Severity</th>
+          <th class="sortable" data-col="vpr">VPR</th>
+          <th class="sortable" data-col="epss">EPSS</th>
+          <th class="sortable" data-col="plugin">Plugin / Vulnerability</th>
+          <th class="sortable" data-col="cve">CVE</th>
+          <th class="sortable" data-col="cvss3">CVSSv3</th>
+          <th class="sortable" data-col="age">Age</th>
+          <th class="sortable" data-col="state">State</th>
+          <th>SLA</th>
+          <th>Threat Flags</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <div id="emptyState" class="empty-state" style="display:none">
+    <div class="icon">📋</div>
+    <p>No findings match your filter. Try a different search or region.</p>
+  </div>
+</div>
+
+<!-- Detail Panel -->
+<div class="panel-bg" id="panelBg" onclick="closePanel()"></div>
+<div class="panel" id="detailPanel">
+  <button class="close-btn" onclick="closePanel()">✕</button>
+  <div id="panelContent"></div>
 </div>
 
 <!-- Trend Modal -->
 <div class="modal-bg" id="trendModal">
   <div class="modal">
     <h3>Add Weekly Snapshot</h3>
-    <label>Week Label (e.g. Jun 11)</label><input id="tw_label" placeholder="Jun 11">
+    <label>Week Label</label><input id="tw_label" placeholder="Jun 11">
     <label>Critical</label><input id="tw_crit" type="number" value="0">
     <label>High</label><input id="tw_high" type="number" value="0">
     <label>Medium</label><input id="tw_med" type="number" value="0">
@@ -199,21 +284,19 @@
 </div>
 
 <script>
-// ============================================================
-//  VULN DATA
-// ============================================================
+// ─── SAMPLE DATA (replaced when you import Tenable CSV) ───────────────────
 let VULN_DATA = [
-  { asset:"LAPTOP-US-001",    region:"US", severity:"Critical", plugin:"Log4Shell RCE",                    cve:"CVE-2021-44228", age:92,  state:"Open" },
-  { asset:"LAPTOP-UK-042",    region:"UK", severity:"Critical", plugin:"ProxyLogon Exchange RCE",           cve:"CVE-2021-26855", age:74,  state:"Open" },
-  { asset:"SERVER-PROD-03",   region:"US", severity:"High",     plugin:"Apache HTTP Server Path Traversal", cve:"CVE-2021-41773", age:45,  state:"Open" },
-  { asset:"LAPTOP-AU-007",    region:"AU", severity:"High",     plugin:"Mozilla Firefox < 148.0",           cve:"CVE-2026-1100",  age:12,  state:"Open" },
-  { asset:"WORKSTATION-DE-9", region:"DE", severity:"High",     plugin:"Dell Peripheral Manager < 1.7.6",   cve:"N/A",            age:8,   state:"Remediated" },
-  { asset:"SERVER-PROD-01",   region:"US", severity:"Medium",   plugin:"nginx SSL Upstream Injection",      cve:"CVE-2026-1642",  age:21,  state:"Open" },
-  { asset:"LAPTOP-US-033",    region:"US", severity:"Medium",   plugin:"Office Protected View Disabled",    cve:"N/A",            age:5,   state:"Open" },
-  { asset:"LAPTOP-US-019",    region:"US", severity:"Medium",   plugin:"Cisco Webex DLL Injection",         cve:"CVE-2025-9832",  age:17,  state:"Open" },
-  { asset:"LAPTOP-UK-011",    region:"UK", severity:"Low",      plugin:"TLS 1.0 Enabled",                   cve:"N/A",            age:60,  state:"Exception" },
-  { asset:"LAPTOP-AU-003",    region:"AU", severity:"Low",      plugin:"SMB Signing Disabled",              cve:"N/A",            age:30,  state:"Open" },
-  { asset:"SERVER-DEV-02",    region:"UK", severity:"Info",     plugin:"Open Port Detection (8080)",        cve:"N/A",            age:3,   state:"Open" },
+  { asset:"LAPTOP-US-001",   os:"Windows 11",    region:"US", severity:"Critical", plugin:"Log4Shell RCE",                    cve:"CVE-2021-44228", vpr:9.8, epss:0.97, cvss3:10.0, age:92,  state:"Open",        exploited:true,  malware:true,  news:true,  kev:true,  solution:"Update log4j to 2.17.1 or later. Apply vendor patch immediately.", refs:["https://nvd.nist.gov/vuln/detail/CVE-2021-44228","https://www.cisa.gov/known-exploited-vulnerabilities-catalog"], synopsis:"Remote code execution via JNDI injection in Apache Log4j." },
+  { asset:"LAPTOP-UK-042",   os:"Windows 10",    region:"UK", severity:"Critical", plugin:"ProxyLogon Exchange RCE",           cve:"CVE-2021-26855", vpr:9.5, epss:0.94, cvss3:9.8,  age:74,  state:"Open",        exploited:true,  malware:false, news:true,  kev:true,  solution:"Apply Microsoft Exchange cumulative update KB5000871.", refs:["https://nvd.nist.gov/vuln/detail/CVE-2021-26855"], synopsis:"Server-side request forgery in Microsoft Exchange allowing pre-auth RCE." },
+  { asset:"SERVER-PROD-03",  os:"Ubuntu 20.04",  region:"US", severity:"High",     plugin:"Apache HTTP Server Path Traversal", cve:"CVE-2021-41773", vpr:8.1, epss:0.88, cvss3:9.8,  age:45,  state:"Open",        exploited:true,  malware:false, news:true,  kev:false, solution:"Upgrade Apache HTTPD to 2.4.51 or later.", refs:["https://nvd.nist.gov/vuln/detail/CVE-2021-41773"], synopsis:"Path traversal and RCE in Apache 2.4.49." },
+  { asset:"LAPTOP-AU-007",   os:"Windows 11",    region:"AU", severity:"High",     plugin:"Mozilla Firefox < 148.0",           cve:"CVE-2026-1100",  vpr:7.4, epss:0.62, cvss3:8.8,  age:12,  state:"Open",        exploited:false, malware:false, news:false, kev:false, solution:"Update Mozilla Firefox to version 148.0 or later via software center.", refs:["https://nvd.nist.gov/vuln/detail/CVE-2026-1100"], synopsis:"Memory corruption vulnerability allowing arbitrary code execution." },
+  { asset:"WORKSTATION-DE-9",os:"Windows 10",    region:"DE", severity:"High",     plugin:"Dell Peripheral Manager < 1.7.6",  cve:"N/A",            vpr:6.8, epss:0.11, cvss3:7.8,  age:8,   state:"Remediated",  exploited:false, malware:false, news:false, kev:false, solution:"Update Dell Peripheral Manager to 1.7.6 via Dell Support.", refs:[], synopsis:"Privilege escalation via insecure DLL loading." },
+  { asset:"SERVER-PROD-01",  os:"Ubuntu 22.04",  region:"US", severity:"Medium",   plugin:"nginx SSL Upstream Injection",      cve:"CVE-2026-1642",  vpr:5.9, epss:0.33, cvss3:6.5,  age:21,  state:"Open",        exploited:false, malware:false, news:true,  kev:false, solution:"Apply nginx patch or upgrade to latest stable release.", refs:["https://nvd.nist.gov/vuln/detail/CVE-2026-1642"], synopsis:"SSL upstream injection allowing traffic interception." },
+  { asset:"LAPTOP-US-033",   os:"Windows 11",    region:"US", severity:"Medium",   plugin:"Office Protected View Disabled",    cve:"N/A",            vpr:4.4, epss:0.05, cvss3:5.5,  age:5,   state:"Open",        exploited:false, malware:false, news:false, kev:false, solution:"Re-enable Protected View via GPO: User Config > Office > Security Settings.", refs:[], synopsis:"Microsoft Office Protected View is disabled, increasing macro attack surface." },
+  { asset:"LAPTOP-US-019",   os:"Windows 10",    region:"US", severity:"Medium",   plugin:"Cisco Webex DLL Injection",         cve:"CVE-2025-9832",  vpr:5.1, epss:0.18, cvss3:6.3,  age:17,  state:"Open",        exploited:false, malware:false, news:false, kev:false, solution:"Update Cisco Webex Teams to the latest patched version.", refs:["https://nvd.nist.gov/vuln/detail/CVE-2025-9832"], synopsis:"DLL injection vulnerability in Cisco Webex allowing privilege escalation." },
+  { asset:"LAPTOP-UK-011",   os:"Windows 10",    region:"UK", severity:"Low",      plugin:"TLS 1.0 Enabled",                   cve:"N/A",            vpr:2.1, epss:0.01, cvss3:3.7,  age:60,  state:"Exception",   exploited:false, malware:false, news:false, kev:false, solution:"Disable TLS 1.0 via registry or IIS settings. Enforce TLS 1.2 minimum.", refs:[], synopsis:"TLS 1.0 is deprecated and susceptible to BEAST and POODLE attacks." },
+  { asset:"LAPTOP-AU-003",   os:"macOS 14",      region:"AU", severity:"Low",      plugin:"SMB Signing Disabled",              cve:"N/A",            vpr:3.2, epss:0.02, cvss3:4.3,  age:30,  state:"Open",        exploited:false, malware:false, news:false, kev:false, solution:"Enable SMB signing via GPO: Network Security > Digitally sign communications.", refs:[], synopsis:"SMB signing not enforced, allowing relay attacks." },
+  { asset:"SERVER-DEV-02",   os:"Ubuntu 20.04",  region:"UK", severity:"Info",     plugin:"Open Port Detection (8080)",        cve:"N/A",            vpr:0.0, epss:0.00, cvss3:0.0,  age:3,   state:"Open",        exploited:false, malware:false, news:false, kev:false, solution:"Review whether port 8080 should be externally accessible. Apply firewall rules if not required.", refs:[], synopsis:"Port 8080 is open and may expose a web service." },
 ];
 
 let TREND_DATA = [
@@ -224,282 +307,424 @@ let TREND_DATA = [
   { week:"Jun 4",  Critical:2, High:5, Medium:7,  Low:2 },
 ];
 
-// SLA thresholds in days
-const SLA = { Critical:7, High:30, Medium:60, Low:90, Info:999 };
+const SLA        = { Critical:7, High:30, Medium:60, Low:90, Info:999 };
+const SEV_ORDER  = { Critical:0, High:1, Medium:2, Low:3, Info:4 };
+const VPR_COLOR  = v => v>=9?"#f85149":v>=7?"#e3b341":v>=4?"#d29922":v>=1?"#3fb950":"#8b949e";
 
-const SEV_ORDER = { Critical:0, High:1, Medium:2, Low:3, Info:4 };
-let sortCol = "severity", sortDir = 1;
-let editingIdx = null;
-let activeRegion = "All";
-let trendChart = null, donutChart = null;
+let sortCol="severity", sortDir=1, activeRegion="All";
+let trendChart=null, donutChart=null, vprChart=null;
 
-// ---- SLA status ----
+// ─── CSV IMPORT ────────────────────────────────────────────────────────────
+document.getElementById("csvFile").addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => parseTenable(ev.target.result, file.name);
+  reader.readAsText(file);
+});
+
+// Drag & drop
+const dz = document.getElementById("dropZone");
+dz.addEventListener("dragover", e => { e.preventDefault(); dz.style.borderColor="#58a6ff"; });
+dz.addEventListener("dragleave", () => { dz.style.borderColor="#30363d"; });
+dz.addEventListener("drop", e => {
+  e.preventDefault();
+  dz.style.borderColor="#30363d";
+  const file = e.dataTransfer.files[0];
+  if (file && file.name.endsWith(".csv")) {
+    const reader = new FileReader();
+    reader.onload = ev => parseTenable(ev.target.result, file.name);
+    reader.readAsText(file);
+  }
+});
+
+function parseTenable(text, filename) {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return;
+
+  // Parse headers — handle quoted fields
+  const headers = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase());
+
+  // Column map — Tenable CSV keys → our fields
+  const col = k => {
+    const idx = headers.indexOf(k.toLowerCase());
+    return idx >= 0 ? idx : -1;
+  };
+
+  const get = (row, key, fallback="") => {
+    const i = col(key);
+    return i >= 0 && row[i] !== undefined ? row[i].trim() : fallback;
+  };
+
+  const imported = [];
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const row = parseCSVLine(lines[i]);
+
+    // Pull all the Tenable fields
+    const asset    = get(row,"asset.name") || get(row,"asset.host_name") || get(row,"asset.display_fqdn") || get(row,"host") || "Unknown";
+    const ip       = get(row,"asset.display_ipv4_address") || get(row,"ipv4");
+    const os       = get(row,"asset.operating_system") || get(row,"operating system") || "";
+    const severity = toTitleCase(get(row,"severity","Info"));
+    const plugin   = get(row,"definition.name") || get(row,"plugin name") || get(row,"name") || "Unknown Plugin";
+    const pluginId = get(row,"definition.id") || get(row,"plugin id") || "";
+    const cve      = get(row,"definition.cve") || get(row,"cve") || "N/A";
+    const vpr      = parseFloat(get(row,"definition.vpr.score") || get(row,"vpr") || "0") || 0;
+    const epss     = parseFloat(get(row,"definition.epss.score") || get(row,"epss") || "0") || 0;
+    const cvss3    = parseFloat(get(row,"definition.cvss3.base_score") || get(row,"cvssv3 base score") || "0") || 0;
+    const cvss2    = parseFloat(get(row,"definition.cvss2.base_score") || "0") || 0;
+    const age      = parseInt(get(row,"age_in_days") || get(row,"age") || get(row,"vuln_age") || "0") || 0;
+    const state    = toTitleCase(get(row,"state","Open"));
+    const solution = get(row,"definition.solution") || get(row,"solution") || "";
+    const synopsis = get(row,"definition.synopsis") || get(row,"synopsis") || "";
+    const desc     = get(row,"definition.description") || get(row,"plugin description") || "";
+    const seeAlso  = get(row,"definition.see_also") || get(row,"see also") || "";
+    const refs     = seeAlso ? seeAlso.split(/[\n,;]+/).map(r=>r.trim()).filter(Boolean) : [];
+    const exploited = boolField(get(row,"definition.exploited_by_nessus") || get(row,"exploited by nessus"));
+    const malware   = boolField(get(row,"definition.exploited_by_malware") || get(row,"exploited by malware") || get(row,"definition.malware"));
+    const news      = boolField(get(row,"definition.in_the_news") || get(row,"in the news"));
+    const kev       = boolField(get(row,"definition.vpr_v2.drivers_on_cisa_kev") || get(row,"on cisa kev"));
+    const family    = get(row,"definition.family") || get(row,"plugin family") || "";
+    const patch     = get(row,"definition.patch_published") || get(row,"patch published") || "";
+    const exploit_ease = get(row,"definition.exploitability_ease") || get(row,"exploitability ease") || "";
+    const threat_int   = get(row,"definition.vpr.drivers_threat_intensity") || "";
+    const sla_date     = get(row,"vuln_sla_date") || "";
+    const first_seen   = get(row,"first_observed") || get(row,"first seen") || "";
+    const last_seen    = get(row,"last_seen") || "";
+    const port         = get(row,"port") || "";
+    const protocol     = get(row,"protocol") || "";
+    const tags         = get(row,"asset.tags") || "";
+
+    // Infer region from asset name or tags
+    const region = inferRegion(asset, tags);
+
+    imported.push({ asset, ip, os, region, severity, plugin, pluginId, cve, vpr, epss, cvss3, cvss2, age, state, solution, synopsis, desc, refs, exploited, malware, news, kev, family, patch, exploit_ease, threat_int, sla_date, first_seen, last_seen, port, protocol, tags });
+  }
+
+  if (imported.length === 0) {
+    document.getElementById("importStatus").textContent = "⚠ No rows found — check CSV format";
+    return;
+  }
+
+  VULN_DATA = imported;
+  document.getElementById("importStatus").textContent = `✓ Imported ${imported.length} findings from ${filename}`;
+  document.getElementById("lastUpdated").textContent = new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+  activeRegion = "All";
+  refreshAll();
+}
+
+function parseCSVLine(line) {
+  const result = [], re = /("(?:[^"]|"")*"|[^,]*),?/g;
+  let m;
+  while ((m = re.exec(line)) !== null) {
+    if (m.index === re.lastIndex) { re.lastIndex++; break; }
+    let val = m[1];
+    if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1,-1).replace(/""/g,'"');
+    result.push(val);
+  }
+  return result;
+}
+
+function boolField(v) { return ["true","yes","1"].includes(String(v).toLowerCase()); }
+function toTitleCase(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s; }
+function inferRegion(asset, tags) {
+  const s = (asset + " " + tags).toUpperCase();
+  if (s.includes("-UK-") || s.includes("_UK_") || s.includes("LONDON") || s.includes("UK")) return "UK";
+  if (s.includes("-AU-") || s.includes("_AU_") || s.includes("SYDNEY") || s.includes("AU")) return "AU";
+  if (s.includes("-DE-") || s.includes("_DE_") || s.includes("BERLIN") || s.includes("DE")) return "DE";
+  if (s.includes("-US-") || s.includes("_US_") || s.includes("US")) return "US";
+  return "Other";
+}
+
+// ─── SLA ──────────────────────────────────────────────────────────────────
 function slaStatus(v) {
-  if (v.state === "Remediated" || v.state === "Exception") return "ok";
-  const limit = SLA[v.severity] || 999;
-  if (v.age >= limit) return "breach";
-  if (v.age >= limit * 0.8) return "warning";
+  if (v.state==="Remediated"||v.state==="Exception") return "ok";
+  const lim = SLA[v.severity]||999;
+  if (v.age>=lim) return "breach";
+  if (v.age>=lim*.8) return "warning";
   return "ok";
 }
 function slaLabel(v) {
-  if (v.state === "Remediated") return "✓ Done";
-  if (v.state === "Exception")  return "Exempt";
-  const limit = SLA[v.severity] || 999;
-  const left = limit - v.age;
-  const st = slaStatus(v);
-  if (st === "breach")  return `Breached ${Math.abs(left)}d ago`;
-  if (st === "warning") return `${left}d left`;
+  if (v.state==="Remediated") return "✓ Done";
+  if (v.state==="Exception")  return "Exempt";
+  const lim = SLA[v.severity]||999, left=lim-v.age;
+  if (slaStatus(v)==="breach")  return `Breached ${Math.abs(left)}d`;
+  if (slaStatus(v)==="warning") return `${left}d left ⚠`;
   return `${left}d left`;
 }
 
-// ---- Cards ----
+// ─── CARDS ────────────────────────────────────────────────────────────────
 function updateCards() {
-  const src = activeRegion === "All" ? VULN_DATA : VULN_DATA.filter(v => v.region === activeRegion);
-  const c = { Critical:0, High:0, Medium:0, Low:0 };
-  let breaches = 0;
-  src.forEach(v => {
-    if (c[v.severity] !== undefined) c[v.severity]++;
-    if (slaStatus(v) === "breach") breaches++;
+  const src = filtered();
+  const c={Critical:0,High:0,Medium:0,Low:0};
+  let breaches=0, epssSum=0, epssCount=0;
+  src.forEach(v=>{
+    if(c[v.severity]!==undefined) c[v.severity]++;
+    if(slaStatus(v)==="breach") breaches++;
+    if(v.epss>0){epssSum+=v.epss;epssCount++;}
   });
-  const total = Object.values(c).reduce((a,b)=>a+b,0);
-  document.getElementById("cards").innerHTML = `
+  const total=Object.values(c).reduce((a,b)=>a+b,0);
+  const avgEpss=epssCount?((epssSum/epssCount)*100).toFixed(1):"—";
+  document.getElementById("cards").innerHTML=`
     <div class="card total"><div class="label">Total</div><div class="value">${total}</div></div>
     <div class="card critical"><div class="label">Critical</div><div class="value">${c.Critical}</div></div>
     <div class="card high"><div class="label">High</div><div class="value">${c.High}</div></div>
     <div class="card medium"><div class="label">Medium</div><div class="value">${c.Medium}</div></div>
     <div class="card low"><div class="label">Low</div><div class="value">${c.Low}</div></div>
     <div class="card breached"><div class="label">SLA Breached</div><div class="value">${breaches}</div></div>
+    <div class="card epss"><div class="label">Avg EPSS</div><div class="value" style="font-size:22px">${avgEpss}%</div><div class="sub">exploit probability</div></div>
   `;
 }
 
-// ---- Donut ----
+// ─── DONUT ────────────────────────────────────────────────────────────────
 function renderDonut() {
-  const src = activeRegion === "All" ? VULN_DATA : VULN_DATA.filter(v => v.region === activeRegion);
-  const open = src.filter(v => v.state === "Open" || v.state === "In Progress");
-  const c = { Critical:0, High:0, Medium:0, Low:0, Info:0 };
-  open.forEach(v => { if(c[v.severity]!==undefined) c[v.severity]++; });
-  const total = Object.values(c).reduce((a,b)=>a+b,0);
-  document.getElementById("donutTotal").textContent = total;
-
-  if (donutChart) donutChart.destroy();
-  donutChart = new Chart(document.getElementById("donutChart"), {
-    type: "doughnut",
-    data: {
-      labels: ["Critical","High","Medium","Low","Info"],
-      datasets: [{
-        data: [c.Critical, c.High, c.Medium, c.Low, c.Info],
-        backgroundColor: ["#f85149","#e3b341","#d29922","#3fb950","#58a6ff"],
-        borderColor: "#161b22",
-        borderWidth: 3,
-        hoverOffset: 6,
-      }]
-    },
-    options: {
-      cutout: "72%",
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { position:"bottom", labels:{ color:"#8b949e", font:{size:11}, padding:12, boxWidth:12 } }
-      }
-    }
+  const src = filtered().filter(v=>v.state==="Open"||v.state==="In Progress");
+  const c={Critical:0,High:0,Medium:0,Low:0,Info:0};
+  src.forEach(v=>{if(c[v.severity]!==undefined)c[v.severity]++;});
+  const total=Object.values(c).reduce((a,b)=>a+b,0);
+  document.getElementById("donutTotal").textContent=total;
+  if(donutChart)donutChart.destroy();
+  donutChart=new Chart(document.getElementById("donutChart"),{
+    type:"doughnut",
+    data:{labels:["Critical","High","Medium","Low","Info"],datasets:[{data:[c.Critical,c.High,c.Medium,c.Low,c.Info],backgroundColor:["#f85149","#e3b341","#d29922","#3fb950","#58a6ff"],borderColor:"#161b22",borderWidth:3,hoverOffset:6}]},
+    options:{cutout:"72%",responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{color:"#8b949e",font:{size:11},padding:10,boxWidth:11}}}}
   });
 }
 
-// ---- Trend Chart ----
+// ─── VPR CHART ────────────────────────────────────────────────────────────
+function renderVprChart() {
+  const src = filtered();
+  const bins=[0,0,0,0,0]; // 0-2, 2-4, 4-6, 6-8, 8-10
+  src.forEach(v=>{
+    const s=v.vpr||0;
+    if(s<2)bins[0]++;else if(s<4)bins[1]++;else if(s<6)bins[2]++;else if(s<8)bins[3]++;else bins[4]++;
+  });
+  if(vprChart)vprChart.destroy();
+  vprChart=new Chart(document.getElementById("vprChart"),{
+    type:"bar",
+    data:{
+      labels:["0–2","2–4","4–6","6–8","8–10"],
+      datasets:[{label:"Findings",data:bins,backgroundColor:["#3fb950","#3fb950","#d29922","#e3b341","#f85149"],borderRadius:5,borderSkipped:false}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#8b949e"},grid:{color:"#21262d"},title:{display:true,text:"VPR Score Range",color:"#8b949e",font:{size:11}}},y:{ticks:{color:"#8b949e"},grid:{color:"#21262d"},beginAtZero:true}}}
+  });
+}
+
+// ─── TREND ────────────────────────────────────────────────────────────────
 function renderTrend() {
-  if (trendChart) trendChart.destroy();
-  trendChart = new Chart(document.getElementById("trendChart"), {
-    type: "line",
-    data: {
-      labels: TREND_DATA.map(d=>d.week),
-      datasets: [
-        { label:"Critical", data:TREND_DATA.map(d=>d.Critical), borderColor:"#f85149", backgroundColor:"rgba(248,81,73,.1)",  tension:.3, fill:true, pointRadius:4 },
-        { label:"High",     data:TREND_DATA.map(d=>d.High),     borderColor:"#e3b341", backgroundColor:"rgba(227,179,65,.1)", tension:.3, fill:true, pointRadius:4 },
-        { label:"Medium",   data:TREND_DATA.map(d=>d.Medium),   borderColor:"#d29922", backgroundColor:"rgba(210,153,34,.08)",tension:.3, fill:true, pointRadius:4 },
-        { label:"Low",      data:TREND_DATA.map(d=>d.Low),      borderColor:"#3fb950", backgroundColor:"rgba(63,185,80,.08)", tension:.3, fill:true, pointRadius:4 },
-      ]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ labels:{ color:"#8b949e", font:{size:12} } } },
-      scales:{
-        x:{ ticks:{color:"#8b949e"}, grid:{color:"#21262d"} },
-        y:{ ticks:{color:"#8b949e"}, grid:{color:"#21262d"}, beginAtZero:true }
-      }
-    }
+  if(trendChart)trendChart.destroy();
+  trendChart=new Chart(document.getElementById("trendChart"),{
+    type:"line",
+    data:{labels:TREND_DATA.map(d=>d.week),datasets:[
+      {label:"Critical",data:TREND_DATA.map(d=>d.Critical),borderColor:"#f85149",backgroundColor:"rgba(248,81,73,.1)",tension:.3,fill:true,pointRadius:4},
+      {label:"High",    data:TREND_DATA.map(d=>d.High),    borderColor:"#e3b341",backgroundColor:"rgba(227,179,65,.1)",tension:.3,fill:true,pointRadius:4},
+      {label:"Medium",  data:TREND_DATA.map(d=>d.Medium),  borderColor:"#d29922",backgroundColor:"rgba(210,153,34,.08)",tension:.3,fill:true,pointRadius:4},
+      {label:"Low",     data:TREND_DATA.map(d=>d.Low),     borderColor:"#3fb950",backgroundColor:"rgba(63,185,80,.08)",tension:.3,fill:true,pointRadius:4},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#8b949e",font:{size:12}}}},scales:{x:{ticks:{color:"#8b949e"},grid:{color:"#21262d"}},y:{ticks:{color:"#8b949e"},grid:{color:"#21262d"},beginAtZero:true}}}
   });
 }
-
-function openTrendModal()  { document.getElementById("trendModal").classList.add("open"); }
-function closeTrendModal() { document.getElementById("trendModal").classList.remove("open"); }
-function addTrendWeek() {
-  const label = document.getElementById("tw_label").value.trim();
-  if (!label) return;
-  TREND_DATA.push({
-    week: label,
-    Critical: +document.getElementById("tw_crit").value||0,
-    High:     +document.getElementById("tw_high").value||0,
-    Medium:   +document.getElementById("tw_med").value||0,
-    Low:      +document.getElementById("tw_low").value||0,
-  });
-  closeTrendModal();
-  renderTrend();
+function openTrendModal(){document.getElementById("trendModal").classList.add("open");}
+function closeTrendModal(){document.getElementById("trendModal").classList.remove("open");}
+function addTrendWeek(){
+  const label=document.getElementById("tw_label").value.trim();
+  if(!label)return;
+  TREND_DATA.push({week:label,Critical:+document.getElementById("tw_crit").value||0,High:+document.getElementById("tw_high").value||0,Medium:+document.getElementById("tw_med").value||0,Low:+document.getElementById("tw_low").value||0});
+  closeTrendModal();renderTrend();
 }
 
-// ---- Region Tabs ----
-function buildTabs() {
-  const regions = ["All", ...new Set(VULN_DATA.map(v=>v.region).sort())];
-  document.getElementById("tabRow").innerHTML = regions.map(r =>
-    `<div class="tab ${r===activeRegion?'active':''}" onclick="setRegion('${r}')">${r}</div>`
-  ).join("");
+// ─── TABS ─────────────────────────────────────────────────────────────────
+function buildTabs(){
+  const regions=["All",...new Set(VULN_DATA.map(v=>v.region).sort())];
+  document.getElementById("tabRow").innerHTML=regions.map(r=>`<div class="tab ${r===activeRegion?"active":""}" onclick="setRegion('${r}')">${r}</div>`).join("");
 }
-function setRegion(r) {
-  activeRegion = r;
-  buildTabs();
-  updateCards();
-  renderDonut();
-  renderTable();
-}
+function setRegion(r){activeRegion=r;buildTabs();updateCards();renderDonut();renderVprChart();renderTable();}
 
-// ---- Table ----
-function getFiltered() {
-  const q = document.getElementById("search").value.toLowerCase();
+// ─── TABLE ────────────────────────────────────────────────────────────────
+function filtered(){
+  const q=document.getElementById("search").value.toLowerCase();
   return VULN_DATA
-    .map((v,i) => ({...v, _idx:i}))
-    .filter(v => activeRegion==="All" || v.region===activeRegion)
-    .filter(v => [v.asset,v.plugin,v.cve,v.severity,v.state,v.region].some(s=>s.toLowerCase().includes(q)))
+    .filter(v=>activeRegion==="All"||v.region===activeRegion)
+    .filter(v=>[v.asset,v.plugin,v.cve,v.severity,v.state,v.os||""].some(s=>s.toLowerCase().includes(q)))
     .sort((a,b)=>{
-      if (sortCol==="severity") return (SEV_ORDER[a.severity]-SEV_ORDER[b.severity])*sortDir;
-      if (sortCol==="age")      return (a.age-b.age)*sortDir;
-      return String(a[sortCol]).localeCompare(String(b[sortCol]))*sortDir;
+      if(sortCol==="severity")return(SEV_ORDER[a.severity]-SEV_ORDER[b.severity])*sortDir;
+      if(sortCol==="vpr"||sortCol==="epss"||sortCol==="cvss3"||sortCol==="age")return((a[sortCol]||0)-(b[sortCol]||0))*sortDir;
+      return String(a[sortCol]||"").localeCompare(String(b[sortCol]||""))*sortDir;
     });
 }
 
-function renderTable() {
-  const rows = getFiltered();
-  document.getElementById("tbody").innerHTML = rows.map(v => {
-    const idx = v._idx;
-    if (editingIdx === idx) return editRowHTML(v, idx);
-    const sl = slaStatus(v), slLabel = slaLabel(v);
+function renderTable(){
+  const rows=filtered();
+  document.getElementById("rowCount").textContent=`(${rows.length} findings)`;
+  document.getElementById("emptyState").style.display=rows.length?"none":"block";
+
+  document.getElementById("tbody").innerHTML=rows.map((v,i)=>{
+    const realIdx=VULN_DATA.indexOf(v);
+    const sl=slaStatus(v);
+    const vprColor=VPR_COLOR(v.vpr||0);
+    const vprPct=Math.min(100,(v.vpr||0)*10);
+    const cveLinks = v.cve && v.cve!=="N/A"
+      ? v.cve.split(/[,;]+/).map(c=>c.trim()).filter(Boolean).map(c=>`<a class="cve-link" href="https://nvd.nist.gov/vuln/detail/${c}" target="_blank">${c}</a>`).join("<br>")
+      : "<span style='color:#8b949e;font-size:11px'>N/A</span>";
     return `
-      <tr onclick="startEdit(${idx})" ondblclick="deleteRow(event,${idx})" title="Click to edit · Double-click to delete">
-        <td>${v.asset}</td>
-        <td style="font-size:12px;color:#8b949e">${v.region}</td>
+      <tr onclick="openPanel(${realIdx})" title="Click for full details">
+        <td>
+          <div style="font-weight:600;font-size:12px">${v.asset}</div>
+          ${v.ip?`<div style="font-size:10px;color:#8b949e">${v.ip}</div>`:""}
+        </td>
+        <td style="font-size:11px;color:#8b949e;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.os||"—"}</td>
         <td><span class="badge ${v.severity}">${v.severity}</span></td>
-        <td>${v.plugin}</td>
-        <td style="font-size:12px;color:#8b949e">${v.cve}</td>
-        <td><span class="age ${v.age>30?'old':''}">${v.age}d</span></td>
-        <td style="font-size:12px">${v.state}</td>
-        <td><span class="sla-badge ${sl}">${slLabel}</span></td>
+        <td>
+          <div class="vpr-wrap">
+            <div class="vpr-bar"><div class="vpr-fill" style="width:${vprPct}%;background:${vprColor}"></div></div>
+            <span class="vpr-num" style="color:${vprColor}">${v.vpr?v.vpr.toFixed(1):"—"}</span>
+          </div>
+        </td>
+        <td><span class="epss-num">${v.epss?(v.epss*100).toFixed(1)+"%":"—"}</span></td>
+        <td class="plugin-cell" title="${v.plugin}">${v.plugin}</td>
+        <td>${cveLinks}</td>
+        <td style="font-size:11px;color:#8b949e">${v.cvss3||"—"}</td>
+        <td><span class="age ${v.age>30?"old":""}" style="font-size:11px">${v.age}d</span></td>
+        <td style="font-size:11px">${v.state}</td>
+        <td><span class="sla-badge ${sl}">${slaLabel(v)}</span></td>
+        <td style="white-space:nowrap">
+          ${v.kev?'<span class="pill kev">KEV</span>':""}
+          ${v.exploited?'<span class="pill exploit">Exploited</span>':""}
+          ${v.malware?'<span class="pill malware">Malware</span>':""}
+          ${v.news?'<span class="pill news">In News</span>':""}
+        </td>
       </tr>`;
   }).join("");
 }
 
-function editRowHTML(v, idx) {
-  const sevOpts = ["Critical","High","Medium","Low","Info"].map(s=>`<option ${s===v.severity?"selected":""}>${s}</option>`).join("");
-  const stOpts  = ["Open","Remediated","Exception","In Progress"].map(s=>`<option ${s===v.state?"selected":""}>${s}</option>`).join("");
-  const regOpts = ["US","UK","AU","DE","Other"].map(s=>`<option ${s===v.region?"selected":""}>${s}</option>`).join("");
-  return `
-    <tr class="editing">
-      <td><input id="e_asset"  value="${v.asset}"></td>
-      <td><select id="e_reg">${regOpts}</select></td>
-      <td><select id="e_sev">${sevOpts}</select></td>
-      <td><input id="e_plugin" value="${v.plugin}"></td>
-      <td><input id="e_cve"   value="${v.cve}" style="width:120px"></td>
-      <td><input id="e_age"   value="${v.age}" type="number" style="width:65px"></td>
-      <td><select id="e_state">${stOpts}</select></td>
-      <td>—</td>
-    </tr>
-    <tr style="background:#1c2128">
-      <td colspan="8" style="padding:8px 12px">
-        <button class="primary" onclick="saveEdit(${idx})">✓ Save</button>
-        <button onclick="cancelEdit()" style="margin-left:8px">Cancel</button>
-      </td>
-    </tr>`;
-}
+// ─── DETAIL PANEL ─────────────────────────────────────────────────────────
+function openPanel(idx){
+  const v=VULN_DATA[idx];
+  const vprColor=VPR_COLOR(v.vpr||0);
+  const cves=v.cve&&v.cve!=="N/A"?v.cve.split(/[,;]+/).map(c=>c.trim()).filter(Boolean):[];
 
-function startEdit(idx) { editingIdx = idx; renderTable(); }
-function cancelEdit()   { editingIdx = null; renderTable(); }
-function saveEdit(idx) {
-  VULN_DATA[idx] = {
-    asset:    document.getElementById("e_asset").value.trim(),
-    region:   document.getElementById("e_reg").value,
-    severity: document.getElementById("e_sev").value,
-    plugin:   document.getElementById("e_plugin").value.trim(),
-    cve:      document.getElementById("e_cve").value.trim(),
-    age:      parseInt(document.getElementById("e_age").value)||0,
-    state:    document.getElementById("e_state").value,
-  };
-  editingIdx = null;
-  refreshAll();
-}
-function deleteRow(e, idx) {
-  e.stopPropagation();
-  if (confirm(`Delete "${VULN_DATA[idx].asset} – ${VULN_DATA[idx].plugin}"?`)) {
-    VULN_DATA.splice(idx,1);
-    editingIdx = null;
-    refreshAll();
+  let html=`
+    <h3>${v.plugin}</h3>
+    <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <span class="badge ${v.severity}">${v.severity}</span>
+      ${v.kev?'<span class="pill kev">CISA KEV</span>':""}
+      ${v.exploited?'<span class="pill exploit">Actively Exploited</span>':""}
+      ${v.malware?'<span class="pill malware">Malware</span>':""}
+      ${v.news?'<span class="pill news">In the News</span>':""}
+    </div>
+
+    <div class="section-title">Asset Info</div>
+    <div class="detail-grid">
+      <div class="detail-item"><div class="di-label">Asset</div><div class="di-value">${v.asset}</div></div>
+      <div class="detail-item"><div class="di-label">IP Address</div><div class="di-value">${v.ip||"—"}</div></div>
+      <div class="detail-item"><div class="di-label">Operating System</div><div class="di-value">${v.os||"—"}</div></div>
+      <div class="detail-item"><div class="di-label">Region</div><div class="di-value">${v.region}</div></div>
+      <div class="detail-item"><div class="di-label">State</div><div class="di-value">${v.state}</div></div>
+      <div class="detail-item"><div class="di-label">Age</div><div class="di-value">${v.age} days</div></div>
+      ${v.first_seen?`<div class="detail-item"><div class="di-label">First Seen</div><div class="di-value">${v.first_seen}</div></div>`:""}
+      ${v.last_seen?`<div class="detail-item"><div class="di-label">Last Seen</div><div class="di-value">${v.last_seen}</div></div>`:""}
+      ${v.port?`<div class="detail-item"><div class="di-label">Port / Protocol</div><div class="di-value">${v.port}/${v.protocol||"?"}</div></div>`:""}
+      ${v.sla_date?`<div class="detail-item"><div class="di-label">SLA Due Date</div><div class="di-value">${v.sla_date}</div></div>`:""}
+    </div>
+
+    <div class="section-title">Risk Scores</div>
+    <div class="vpr-big">
+      <div>
+        <div style="font-size:11px;color:#8b949e;margin-bottom:4px">VPR Score</div>
+        <div class="score" style="color:${vprColor}">${v.vpr?v.vpr.toFixed(1):"N/A"}</div>
+        <div style="font-size:11px;color:#8b949e">/ 10.0</div>
+      </div>
+      <div class="drivers">
+        ${v.epss?`<div>EPSS: <strong style="color:#c084fc">${(v.epss*100).toFixed(2)}%</strong> exploit probability</div>`:""}
+        ${v.cvss3?`<div>CVSSv3 Base: <strong>${v.cvss3}</strong></div>`:""}
+        ${v.cvss2?`<div>CVSSv2 Base: <strong>${v.cvss2}</strong></div>`:""}
+        ${v.exploit_ease?`<div>Exploitability: ${v.exploit_ease}</div>`:""}
+        ${v.threat_int?`<div>Threat Intensity: ${v.threat_int}</div>`:""}
+        ${v.patch?`<div>Patch Published: ${v.patch}</div>`:""}
+      </div>
+    </div>
+
+    <div class="section-title">Synopsis</div>
+    <div class="solution-box">${v.synopsis||v.desc||"No synopsis available."}</div>
+
+    <div class="section-title">Solution / Remediation</div>
+    <div class="solution-box" style="border-left:3px solid #3fb950">${v.solution||"No remediation data available."}</div>
+  `;
+
+  if(cves.length){
+    html+=`<div class="section-title">CVE References</div><ul class="ref-list">`;
+    cves.forEach(c=>{
+      html+=`<li>
+        🔗 <a href="https://nvd.nist.gov/vuln/detail/${c}" target="_blank">NVD — ${c}</a>
+      </li>
+      <li>
+        🔗 <a href="https://www.cve.org/CVERecord?id=${c}" target="_blank">CVE.org — ${c}</a>
+      </li>
+      <li>
+        🔗 <a href="https://www.tenable.com/cve/${c}" target="_blank">Tenable CVE — ${c}</a>
+      </li>`;
+    });
+    html+=`</ul>`;
   }
+
+  if(v.refs&&v.refs.length){
+    html+=`<div class="section-title">Plugin References (See Also)</div><ul class="ref-list">`;
+    v.refs.forEach(r=>{html+=`<li>🔗 <a href="${r}" target="_blank">${r}</a></li>`;});
+    html+=`</ul>`;
+  }
+
+  if(v.family||v.pluginId){
+    html+=`<div class="section-title">Plugin Info</div><div class="detail-grid">
+      ${v.pluginId?`<div class="detail-item"><div class="di-label">Plugin ID</div><div class="di-value"><a class="cve-link" href="https://www.tenable.com/plugins/nessus/${v.pluginId}" target="_blank">${v.pluginId}</a></div></div>`:""}
+      ${v.family?`<div class="detail-item"><div class="di-label">Plugin Family</div><div class="di-value">${v.family}</div></div>`:""}
+    </div>`;
+  }
+
+  document.getElementById("panelContent").innerHTML=html;
+  document.getElementById("panelBg").classList.add("open");
+  document.getElementById("detailPanel").style.transform="translateX(0)";
+}
+function closePanel(){
+  document.getElementById("panelBg").classList.remove("open");
 }
 
-// ---- Add Row ----
-function toggleAddRow() {
-  const f = document.getElementById("addRowForm");
-  f.style.display = f.style.display==="block" ? "none" : "block";
-}
-function addRow() {
-  const asset = document.getElementById("f_asset").value.trim();
-  if (!asset) return alert("Asset name is required.");
-  VULN_DATA.unshift({
-    asset,
-    region:   document.getElementById("f_region").value,
-    severity: document.getElementById("f_severity").value,
-    plugin:   document.getElementById("f_plugin").value.trim()||"Unknown",
-    cve:      document.getElementById("f_cve").value.trim()||"N/A",
-    age:      parseInt(document.getElementById("f_age").value)||0,
-    state:    document.getElementById("f_state").value,
-  });
+// ─── ADD ROW ──────────────────────────────────────────────────────────────
+function toggleAddRow(){const f=document.getElementById("addRowForm");f.style.display=f.style.display==="block"?"none":"block";}
+function addRow(){
+  const asset=document.getElementById("f_asset").value.trim();
+  if(!asset)return alert("Asset name required.");
+  VULN_DATA.unshift({asset,region:document.getElementById("f_region").value,severity:document.getElementById("f_severity").value,plugin:document.getElementById("f_plugin").value.trim()||"Unknown",cve:document.getElementById("f_cve").value.trim()||"N/A",vpr:parseFloat(document.getElementById("f_vpr").value)||0,epss:parseFloat(document.getElementById("f_epss").value)||0,cvss3:0,age:parseInt(document.getElementById("f_age").value)||0,state:document.getElementById("f_state").value,solution:"",synopsis:"",refs:[],exploited:false,malware:false,news:false,kev:false});
   document.getElementById("addRowForm").style.display="none";
-  ["f_asset","f_plugin","f_cve","f_age"].forEach(id=>document.getElementById(id).value="");
+  ["f_asset","f_plugin","f_cve","f_vpr","f_epss","f_age"].forEach(id=>document.getElementById(id).value="");
   refreshAll();
 }
 
-// ---- Export CSV ----
-function exportCSV() {
-  const src = activeRegion==="All" ? VULN_DATA : VULN_DATA.filter(v=>v.region===activeRegion);
-  const headers = ["Asset","Region","Severity","Plugin / Vulnerability","CVE","Age (days)","State","SLA Status"];
-  const rows = src.map(v=>[v.asset, v.region, v.severity, `"${v.plugin}"`, v.cve, v.age, v.state, slaLabel(v)]);
-  const csv = [headers.join(","), ...rows.map(r=>r.join(","))].join("\n");
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
-  a.download = `vuln-${activeRegion}-${new Date().toISOString().slice(0,10)}.csv`;
+// ─── EXPORT CSV ───────────────────────────────────────────────────────────
+function exportCSV(){
+  const src=activeRegion==="All"?VULN_DATA:VULN_DATA.filter(v=>v.region===activeRegion);
+  const headers=["Asset","IP","OS","Region","Severity","Plugin","CVE","VPR","EPSS","CVSSv3","Age (days)","State","SLA","KEV","Exploited","Malware","In News","Solution"];
+  const rows=src.map(v=>[v.asset,v.ip||"",v.os||"",v.region,v.severity,`"${v.plugin}"`,v.cve,v.vpr||"",v.epss||"",v.cvss3||"",v.age,v.state,slaLabel(v),v.kev?"Yes":"",v.exploited?"Yes":"",v.malware?"Yes":"",v.news?"Yes":"",`"${(v.solution||"").replace(/"/g,'""')}"`]);
+  const csv=[headers.join(","),...rows.map(r=>r.join(","))].join("\n");
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download=`vuln-export-${activeRegion}-${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
 }
 
-// ---- Sort ----
+// ─── SORT ─────────────────────────────────────────────────────────────────
 document.querySelectorAll("th.sortable").forEach(th=>{
   th.addEventListener("click",()=>{
-    const col = th.dataset.col;
-    sortDir = col===sortCol ? sortDir*-1 : 1;
-    sortCol = col;
+    const col=th.dataset.col;
+    sortDir=col===sortCol?sortDir*-1:1;
+    sortCol=col;
     renderTable();
   });
 });
+document.getElementById("search").addEventListener("input",renderTable);
 
-document.getElementById("search").addEventListener("input", renderTable);
-
-// ---- Refresh all ----
-function refreshAll() {
-  buildTabs();
-  updateCards();
-  renderDonut();
-  renderTable();
-}
-
-// ---- Init ----
-document.getElementById("lastUpdated").textContent =
-  new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
-
+// ─── INIT ─────────────────────────────────────────────────────────────────
+function refreshAll(){buildTabs();updateCards();renderDonut();renderVprChart();renderTable();}
+document.getElementById("lastUpdated").textContent=new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
 refreshAll();
 renderTrend();
 </script>
